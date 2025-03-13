@@ -1,0 +1,6 @@
+# Jangan track environment & credential
+.env
+serviceAccountKey.json
+
+# Jangan track dependencies
+node_modules/
