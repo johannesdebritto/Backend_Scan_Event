@@ -47,7 +47,7 @@ app.use('/barcodes', express.static(path.join(__dirname, 'barcodes')));
 // Routes
 app.use('/api/auth', authRoutes); // Hubungkan route auth
 app.use('/api/barang', barangRoutes); // Hubungkan route barang
-app.use("/event", eventRouter);
+app.use("/api/event", eventRouter);
 
 // Test endpoint
 app.get('/', (req, res) => {
