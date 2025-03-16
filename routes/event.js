@@ -4,7 +4,7 @@ const verifyFirebaseToken = require("../middleware/verifyFirebaseToken");
 const connectDB = require('../db');
 
 // Simpan event baru
-router.post("/", verifyFirebaseToken, async(req, res) => {
+router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     const { nama_event, tanggal, kota, kabupaten } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
