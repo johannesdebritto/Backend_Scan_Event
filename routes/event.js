@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken");
-const connectDB = require("../config/db");
+const connectDB = require('../db');
 
 // Simpan event baru
 router.post("/", verifyFirebaseToken, async(req, res) => {
