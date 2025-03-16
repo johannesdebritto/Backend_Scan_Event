@@ -4,6 +4,9 @@ const admin = require('firebase-admin');
 const cors = require('cors');
 const authRoutes = require('./routes/auth'); // Import route auth
 const barangRoutes = require('./routes/barang'); // Import route barang
+const eventRouter = require("./routes/event");
+
+
 const path = require('path');
 
 const app = express();
@@ -44,6 +47,7 @@ app.use('/barcodes', express.static(path.join(__dirname, 'barcodes')));
 // Routes
 app.use('/api/auth', authRoutes); // Hubungkan route auth
 app.use('/api/barang', barangRoutes); // Hubungkan route barang
+app.use("/event", eventRouter);
 
 // Test endpoint
 app.get('/', (req, res) => {

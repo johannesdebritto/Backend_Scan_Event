@@ -127,7 +127,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
     });
 });
 
-
+//ambil data barang
 router.get("/", verifyFirebaseToken, async(req, res) => {
     let connection;
     try {
