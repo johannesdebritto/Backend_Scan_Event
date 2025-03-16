@@ -3,8 +3,15 @@ const router = express.Router();
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken");
 const connectDB = require('../db');
 
-const moment = require("moment");
+// Fungsi untuk mengubah format tanggal dari "DD-MM-YYYY" ke "YYYY-MM-DD"
+function convertDateFormat(dateStr) {
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return null;
+    const [day, month, year] = parts;
+    return `${year}-${month}-${day}`;
+}
 
+// Simpan event baru
 router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     const { nama_event, tanggal, kota, kabupaten } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
@@ -21,15 +28,10 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
-    // Konversi format tanggal dari "DD-MM-YYYY" ke "YYYY-MM-DD"
-    let formattedDate;
-    try {
-        formattedDate = moment(tanggal, "DD-MM-YYYY").format("YYYY-MM-DD");
-        if (!moment(formattedDate, "YYYY-MM-DD", true).isValid()) {
-            throw new Error("Format tanggal tidak valid");
-        }
-    } catch (error) {
-        return res.status(400).json({ error: "Format tanggal tidak valid", details: error.message });
+    // Konversi format tanggal
+    const formattedDate = convertDateFormat(tanggal);
+    if (!formattedDate) {
+        return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
     }
 
     let connection;
