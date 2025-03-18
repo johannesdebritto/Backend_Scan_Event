@@ -18,6 +18,7 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
 
     console.log("🟢 Menerima permintaan POST /event");
     console.log("🔍 UID dari Firebase:", firebase_uid);
+    console.log("📦 Data diterima:", req.body);
 
     if (!firebase_uid) {
         console.error("🔴 UID tidak ditemukan dalam request!");
@@ -25,37 +26,37 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     }
 
     if (!nama_event || !tanggal || !kota || !kabupaten) {
+        console.error("⚠️ Debug: Ada field yang kosong!");
         return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
     // Konversi format tanggal
     const formattedDate = convertDateFormat(tanggal);
     if (!formattedDate) {
+        console.error("⚠️ Format tanggal salah, seharusnya DD-MM-YYYY!");
         return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
     }
 
     let connection;
     try {
         connection = await connectDB();
-        await connection.beginTransaction();
 
-        console.log("🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
+        console.log("🟢 Data yang akan disimpan:", { firebase_uid, nama_event, formattedDate, kota, kabupaten });
 
+        // Jalankan query INSERT
         const [result] = await connection.execute(
             "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten) VALUES (?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten]
         );
 
-        await connection.commit();
-        console.log("🟢 Event berhasil ditambahkan! ID:", result.insertId);
+        console.log("✅ Event berhasil ditambahkan! ID:", result.insertId);
+
         res.status(201).json({ message: "Event berhasil ditambahkan", eventId: result.insertId });
     } catch (error) {
-        if (connection) await connection.rollback();
-        console.error("🔴 Error saat menyimpan event:", error);
+        console.error("🚨 Error saat menyimpan event:", error);
         res.status(500).json({ error: "Gagal menambahkan event", details: error.message });
     } finally {
         if (connection) await connection.end();
     }
 });
-
 
 module.exports = router;
