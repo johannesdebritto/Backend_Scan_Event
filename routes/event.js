@@ -59,4 +59,65 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+// Simpan hasil scan QR code
+router.post("/scan", verifyFirebaseToken, async(req, res) => {
+    const { qr_code } = req.body;
+    const firebase_uid = req.user && req.user.firebase_uid;
+
+    console.log("🟢 Menerima scan QR code:", qr_code);
+    console.log("🔍 Firebase UID:", firebase_uid);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    if (!qr_code) {
+        console.error("⚠️ QR Code kosong!");
+        return res.status(400).json({ error: "QR Code harus diisi" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // **Ambil event ID terakhir berdasarkan Firebase UID**
+        const [event] = await connection.execute(
+            "SELECT id_event FROM events WHERE firebase_uid = ? ORDER BY id_event DESC LIMIT 1", [firebase_uid]
+        );
+
+        if (event.length === 0) {
+            console.error("⚠️ Tidak ada event yang ditemukan untuk UID ini!");
+            return res.status(404).json({ error: "Event tidak ditemukan untuk pengguna ini" });
+        }
+
+        const id_event = event[0].id_event;
+        console.log("📌 ID Event ditemukan:", id_event);
+
+        // **Cek apakah QR code sudah pernah discan dalam event ini**
+        const [existingQR] = await connection.execute(
+            "SELECT * FROM qr_codes WHERE id_event = ? AND qr_code = ?", [id_event, qr_code]
+        );
+
+        if (existingQR.length > 0) {
+            console.warn("⚠️ QR Code sudah pernah discan untuk event ini!");
+            return res.status(409).json({ error: "QR Code ini sudah ada di event ini" });
+        }
+
+        // **Simpan data scan ke tabel `qr_codes`**
+        await connection.execute(
+            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code) VALUES (?, ?, ?)", [id_event, firebase_uid, qr_code]
+        );
+
+        console.log("✅ QR Code berhasil disimpan!");
+        res.status(201).json({ message: "QR Code berhasil disimpan", id_event });
+
+    } catch (error) {
+        console.error("🚨 Error saat menyimpan QR code:", error);
+        res.status(500).json({ error: "Gagal menyimpan QR code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
 module.exports = router;
