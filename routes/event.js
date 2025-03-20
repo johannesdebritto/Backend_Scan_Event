@@ -11,6 +11,16 @@ function convertDateFormat(dateStr) {
     return `${year}-${month}-${day}`;
 }
 
+// Fungsi untuk mendapatkan waktu sekarang dalam format HH:mm:ss (WIB)
+function getCurrentTimeWIB() {
+    const now = new Date(); // Waktu saat ini dalam UTC
+    now.setHours(now.getHours() + 7); // Tambah 7 jam untuk WIB
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+    return `${hours}:${minutes}:${seconds}`;
+}
+
 // Simpan event baru
 router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     const { nama_event, tanggal, kota, kabupaten } = req.body;
@@ -37,15 +47,25 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
     }
 
+    // Dapatkan waktu dalam format WIB
+    const waktuDibuat = getCurrentTimeWIB();
+
     let connection;
     try {
         connection = await connectDB();
 
-        console.log("🟢 Data yang akan disimpan:", { firebase_uid, nama_event, formattedDate, kota, kabupaten });
+        console.log("🟢 Data yang akan disimpan:", {
+            firebase_uid,
+            nama_event,
+            formattedDate,
+            kota,
+            kabupaten,
+            waktuDibuat,
+        });
 
-        // Jalankan query INSERT
+        // Jalankan query INSERT dengan tambahan waktu_dibuat
         const [result] = await connection.execute(
-            "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten) VALUES (?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten]
+            "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten, waktu_dibuat) VALUES (?, ?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten, waktuDibuat]
         );
 
         console.log("✅ Event berhasil ditambahkan! ID:", result.insertId);
