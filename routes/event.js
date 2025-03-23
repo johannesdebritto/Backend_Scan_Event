@@ -141,8 +141,9 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
 
         // **Simpan data scan ke tabel `qr_codes` dengan `id_status = 2` (dipakai)**
         await connection.execute(
-            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, id_status) VALUES (?, ?, ?, ?)", [id_event, firebase_uid, qr_code, 2] // `2` = dipakai
+            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, scan_date, scan_time, id_status) VALUES (?, ?, ?, CURDATE(), CURTIME(), ?)", [id_event, firebase_uid, qr_code, 2] // `2` = dipakai
         );
+
 
         console.log("✅ QR Code berhasil disimpan dengan status 'dipakai'!");
         res.status(201).json({ message: "QR Code berhasil disimpan", id_event });
