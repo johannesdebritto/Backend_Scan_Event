@@ -238,6 +238,47 @@ router.get("/tampil", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+//detail
+// Ambil detail event berdasarkan id_event
+router.get("/detail/:id_event", verifyFirebaseToken, async(req, res) => {
+    const firebase_uid = req.user && req.user.firebase_uid;
+    const { id_event } = req.params;
+
+    console.log(`🟢 Menerima permintaan GET /event/detail/${id_event}`);
+    console.log("🔍 UID dari Firebase:", firebase_uid);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Ambil detail event berdasarkan id_event dan Firebase UID
+        const [event] = await connection.execute(
+            "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.deskripsi, s.nama_status AS status, e.waktu_dibuat " +
+            "FROM events e " +
+            "JOIN status s ON e.id_status = s.id_status " +
+            "WHERE e.id_event = ? AND e.firebase_uid = ?", [id_event, firebase_uid]
+        );
+
+        if (event.length > 0) {
+            console.log("✅ Data event ditemukan:", event[0]);
+            res.status(200).json(event[0]);
+        } else {
+            console.error("🔴 Event tidak ditemukan!");
+            res.status(404).json({ error: "Event tidak ditemukan" });
+        }
+
+    } catch (error) {
+        console.error("🚨 Error saat mengambil detail event:", error);
+        res.status(500).json({ error: "Gagal mengambil detail event", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
 
 // Ambil daftar barang (QR Code) berdasarkan id_event dan firebase_uid
 router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
