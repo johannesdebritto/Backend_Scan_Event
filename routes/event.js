@@ -87,7 +87,6 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     }
 });
 
-
 // Simpan hasil scan QR code
 router.post("/scan", verifyFirebaseToken, async(req, res) => {
     const { qr_code } = req.body;
@@ -133,12 +132,12 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
             return res.status(409).json({ error: "QR Code ini sudah ada di event ini" });
         }
 
-        // **Simpan data scan ke tabel `qr_codes`**
+        // **Simpan data scan ke tabel `qr_codes` dengan `id_status = 2` (dipakai)**
         await connection.execute(
-            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code) VALUES (?, ?, ?)", [id_event, firebase_uid, qr_code]
+            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, id_status) VALUES (?, ?, ?, ?)", [id_event, firebase_uid, qr_code, 2] // `2` = dipakai
         );
 
-        console.log("✅ QR Code berhasil disimpan!");
+        console.log("✅ QR Code berhasil disimpan dengan status 'dipakai'!");
         res.status(201).json({ message: "QR Code berhasil disimpan", id_event });
 
     } catch (error) {
