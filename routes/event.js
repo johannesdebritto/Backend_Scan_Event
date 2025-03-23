@@ -185,4 +185,45 @@ router.get("/tampil", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+
+// Ambil daftar barang (QR Code) berdasarkan id_event dan firebase_uid
+router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
+    const firebase_uid = req.user && req.user.firebase_uid;
+    const { id_event } = req.query; // Ambil id_event dari query parameter
+
+    console.log("🟢 Menerima permintaan GET /scan");
+    console.log("🔍 Firebase UID:", firebase_uid);
+    console.log("📌 ID Event:", id_event);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    if (!id_event) {
+        console.error("⚠️ ID Event tidak diberikan!");
+        return res.status(400).json({ error: "ID Event harus disertakan dalam query" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Ambil daftar QR Code berdasarkan id_event dan firebase_uid
+        const [qrList] = await connection.execute(
+            "SELECT qr_code, scanned_at, id_status FROM qr_codes WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
+        );
+
+        console.log("✅ Data QR Code ditemukan:", qrList.length, "item");
+
+        res.status(200).json({ message: "Data QR Code berhasil diambil", data: qrList });
+
+    } catch (error) {
+        console.error("🚨 Error saat mengambil data QR Code:", error);
+        res.status(500).json({ error: "Gagal mengambil data QR Code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
 module.exports = router;
