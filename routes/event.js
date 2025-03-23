@@ -156,11 +156,14 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
 });
 
 //cek qr
-router.get("/check-qrcode", async(req, res) => {
-    const { firebase_uid } = req.query; // Ambil UID dari query parameter
+router.get("/check-qrcode", verifyFirebaseToken, async(req, res) => {
+    const firebase_uid = req.user && req.user.firebase_uid; // Ambil UID dari token Firebase
+
+    console.log("🔍 Firebase UID:", firebase_uid);
 
     if (!firebase_uid) {
-        return res.status(400).json({ error: "firebase_uid harus disertakan" });
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
     }
 
     let connection;
@@ -173,10 +176,12 @@ router.get("/check-qrcode", async(req, res) => {
         );
 
         if (event.length === 0) {
+            console.warn("⚠️ Tidak ada event yang ditemukan untuk UID ini!");
             return res.status(404).json({ error: "Event tidak ditemukan untuk pengguna ini" });
         }
 
         const id_event = event[0].id_event;
+        console.log("📌 ID Event ditemukan:", id_event);
 
         // Cek apakah ada QR code dalam event terbaru
         const [existingQR] = await connection.execute(
@@ -185,13 +190,17 @@ router.get("/check-qrcode", async(req, res) => {
 
         const qrExists = existingQR[0].count > 0;
 
+        console.log(qrExists ? "✅ QR Code ditemukan dalam event ini!" : "⚠️ Belum ada QR Code yang di-scan.");
+
         res.status(200).json({ exists: qrExists, id_event });
     } catch (error) {
+        console.error("🚨 Error saat mengecek QR code:", error);
         res.status(500).json({ error: "Gagal mengecek QR code", details: error.message });
     } finally {
         if (connection) await connection.end();
     }
 });
+
 
 // Ambil daftar event berdasarkan Firebase UID
 router.get("/tampil", verifyFirebaseToken, async(req, res) => {
