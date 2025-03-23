@@ -22,8 +22,9 @@ function getCurrentTimeWIB() {
 }
 
 // Simpan event baru
+// Simpan event baru
 router.post("/simpan", verifyFirebaseToken, async(req, res) => {
-    const { nama_event, tanggal, kota, kabupaten } = req.body;
+    const { nama_event, tanggal, kota, kabupaten, id_status } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
     console.log("🟢 Menerima permintaan POST /event");
@@ -35,9 +36,15 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
     }
 
-    if (!nama_event || !tanggal || !kota || !kabupaten) {
+    if (!nama_event || !tanggal || !kota || !kabupaten || !id_status) {
         console.error("⚠️ Debug: Ada field yang kosong!");
         return res.status(400).json({ error: "Semua field harus diisi" });
+    }
+
+    // Pastikan id_status valid (1 = selesai, 2 = dipakai)
+    if (![1, 2].includes(Number(id_status))) {
+        console.error("❌ Debug: id_status tidak valid!", id_status);
+        return res.status(400).json({ error: "id_status harus 1 (selesai) atau 2 (dipakai)" });
     }
 
     // Konversi format tanggal
@@ -60,12 +67,13 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
             formattedDate,
             kota,
             kabupaten,
+            id_status,
             waktuDibuat,
         });
 
-        // Jalankan query INSERT dengan tambahan waktu_dibuat
+        // Jalankan query INSERT dengan id_status
         const [result] = await connection.execute(
-            "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten, waktu_dibuat) VALUES (?, ?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten, waktuDibuat]
+            "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten, id_status, waktu_dibuat) VALUES (?, ?, ?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten, id_status, waktuDibuat]
         );
 
         console.log("✅ Event berhasil ditambahkan! ID:", result.insertId);
@@ -78,6 +86,7 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
+
 
 // Simpan hasil scan QR code
 router.post("/scan", verifyFirebaseToken, async(req, res) => {
