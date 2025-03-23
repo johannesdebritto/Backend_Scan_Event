@@ -139,9 +139,11 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
             return res.status(409).json({ error: "QR Code ini sudah ada di event ini" });
         }
 
-        // **Simpan data scan ke tabel `qr_codes` dengan `id_status = 2` (dipakai)**
+        const scanDate = new Date().toLocaleDateString("id-ID").split("/").reverse().join("-"); // YYYY-MM-DD (WIB)
+        const scanTime = getCurrentTimeWIB(); // HH:mm:ss (WIB)
+
         await connection.execute(
-            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, scan_date, scan_time, id_status) VALUES (?, ?, ?, CURDATE(), CURTIME(), ?)", [id_event, firebase_uid, qr_code, 2] // `2` = dipakai
+            "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, scan_date, scan_time, id_status) VALUES (?, ?, ?, ?, ?, ?)", [id_event, firebase_uid, qr_code, scanDate, scanTime, 2]
         );
 
 
