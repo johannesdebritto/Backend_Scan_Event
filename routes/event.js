@@ -258,10 +258,10 @@ router.get("/detail/:id_event", verifyFirebaseToken, async(req, res) => {
 
         // Ambil detail event berdasarkan id_event dan Firebase UID
         const [event] = await connection.execute(
-            "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.deskripsi, s.nama_status AS status, e.waktu_dibuat " +
-            "FROM events e " +
-            "JOIN status s ON e.id_status = s.id_status " +
-            "WHERE e.id_event = ? AND e.firebase_uid = ?", [id_event, firebase_uid]
+            `SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, s.nama_status AS status, e.waktu_dibuat 
+             FROM events e
+             JOIN status s ON e.id_status = s.id_status 
+             WHERE e.id_event = ? AND e.firebase_uid = ?`, [id_event, firebase_uid]
         );
 
         if (event.length > 0) {
@@ -279,6 +279,7 @@ router.get("/detail/:id_event", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
+
 
 // Ambil daftar barang (QR Code) berdasarkan id_event dan firebase_uid
 router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
