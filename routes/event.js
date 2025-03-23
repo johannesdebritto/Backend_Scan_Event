@@ -289,7 +289,7 @@ router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
     const firebase_uid = req.user && req.user.firebase_uid;
     const { id_event } = req.query; // Ambil id_event dari query parameter
 
-    console.log("🟢 Menerima permintaan GET /scan");
+    console.log("🟢 Menerima permintaan GET /tampil_scan");
     console.log("🔍 Firebase UID:", firebase_uid);
     console.log("📌 ID Event:", id_event);
 
@@ -309,7 +309,7 @@ router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
 
         // Ambil daftar QR Code berdasarkan id_event dan firebase_uid
         const [qrList] = await connection.execute(
-            "SELECT qr_code, scanned_at, id_status FROM qr_codes WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
+            "SELECT qr_code, scan_date, scan_time, id_status FROM qr_codes WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
         );
 
         console.log("✅ Data QR Code ditemukan:", qrList.length, "item");
