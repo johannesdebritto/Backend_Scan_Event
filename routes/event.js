@@ -148,4 +148,41 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+
+// Ambil daftar event berdasarkan Firebase UID
+router.get("/tampil", verifyFirebaseToken, async(req, res) => {
+    const firebase_uid = req.user && req.user.firebase_uid;
+
+    console.log("🟢 Menerima permintaan GET /event");
+    console.log("🔍 UID dari Firebase:", firebase_uid);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Ambil daftar event berdasarkan Firebase UID
+        const [events] = await connection.execute(
+            "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, s.nama_status AS status, e.waktu_dibuat " +
+            "FROM events e " +
+            "JOIN status s ON e.id_status = s.id_status " +
+            "WHERE e.firebase_uid = ? " +
+            "ORDER BY e.tanggal DESC", [firebase_uid]
+        );
+
+        console.log("✅ Data event ditemukan:", events.length, "event(s)");
+        res.status(200).json(events);
+
+    } catch (error) {
+        console.error("🚨 Error saat mengambil event:", error);
+        res.status(500).json({ error: "Gagal mengambil event", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
 module.exports = router;
