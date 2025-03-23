@@ -155,6 +155,43 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+//cek qr
+router.get("/check-qrcode", async(req, res) => {
+    const { firebase_uid } = req.query; // Ambil UID dari query parameter
+
+    if (!firebase_uid) {
+        return res.status(400).json({ error: "firebase_uid harus disertakan" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Ambil event ID terbaru berdasarkan Firebase UID
+        const [event] = await connection.execute(
+            "SELECT id_event FROM events WHERE firebase_uid = ? ORDER BY id_event DESC LIMIT 1", [firebase_uid]
+        );
+
+        if (event.length === 0) {
+            return res.status(404).json({ error: "Event tidak ditemukan untuk pengguna ini" });
+        }
+
+        const id_event = event[0].id_event;
+
+        // Cek apakah ada QR code dalam event terbaru
+        const [existingQR] = await connection.execute(
+            "SELECT COUNT(*) as count FROM qr_codes WHERE id_event = ?", [id_event]
+        );
+
+        const qrExists = existingQR[0].count > 0;
+
+        res.status(200).json({ exists: qrExists, id_event });
+    } catch (error) {
+        res.status(500).json({ error: "Gagal mengecek QR code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
 
 // Ambil daftar event berdasarkan Firebase UID
 router.get("/tampil", verifyFirebaseToken, async(req, res) => {
