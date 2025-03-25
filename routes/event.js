@@ -241,46 +241,7 @@ router.get("/tampil", verifyFirebaseToken, async(req, res) => {
     }
 });
 
-// Hapus event berdasarkan Firebase UID dan id_event
-router.delete("/hapus/:id_event", verifyFirebaseToken, async(req, res) => {
-    const firebase_uid = req.user && req.user.firebase_uid;
-    const { id_event } = req.params;
 
-    console.log("🟢 Menerima permintaan DELETE /event");
-    console.log("🔍 UID dari Firebase:", firebase_uid);
-    console.log("🔍 ID Event yang akan dihapus:", id_event);
-
-    if (!firebase_uid) {
-        console.error("🔴 UID tidak ditemukan dalam request!");
-        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
-    }
-
-    let connection;
-    try {
-        connection = await connectDB();
-
-        // Periksa apakah event milik user dengan Firebase UID yang sesuai
-        const [event] = await connection.execute(
-            "SELECT id_event FROM events WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
-        );
-
-        if (event.length === 0) {
-            console.error("🔴 Event tidak ditemukan atau bukan milik user ini!");
-            return res.status(404).json({ error: "Event tidak ditemukan atau tidak memiliki izin" });
-        }
-
-        // Hapus event jika valid
-        await connection.execute("DELETE FROM events WHERE id_event = ?", [id_event]);
-
-        console.log("✅ Event berhasil dihapus");
-        res.status(200).json({ message: "Event berhasil dihapus" });
-    } catch (error) {
-        console.error("🚨 Error saat menghapus event:", error);
-        res.status(500).json({ error: "Gagal menghapus event", details: error.message });
-    } finally {
-        if (connection) await connection.end();
-    }
-});
 
 // Ambil detail event berdasarkan id_event
 router.get("/detail/:id_event", verifyFirebaseToken, async(req, res) => {
@@ -359,6 +320,52 @@ router.get("/tampil_scan", verifyFirebaseToken, async(req, res) => {
     } catch (error) {
         console.error("🚨 Error saat mengambil data QR Code:", error);
         res.status(500).json({ error: "Gagal mengambil data QR Code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
+
+// Hapus event dan QR Code berdasarkan Firebase UID dan id_event
+router.delete("/hapus/:id_event", verifyFirebaseToken, async(req, res) => {
+    const firebase_uid = req.user && req.user.firebase_uid;
+    const { id_event } = req.params;
+
+    console.log("🟢 Menerima permintaan DELETE /event");
+    console.log("🔍 UID dari Firebase:", firebase_uid);
+    console.log("🔍 ID Event yang akan dihapus:", id_event);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Periksa apakah event milik user dengan Firebase UID yang sesuai
+        const [event] = await connection.execute(
+            "SELECT id_event FROM events WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
+        );
+
+        if (event.length === 0) {
+            console.error("🔴 Event tidak ditemukan atau bukan milik user ini!");
+            return res.status(404).json({ error: "Event tidak ditemukan atau tidak memiliki izin" });
+        }
+
+        // Hapus semua QR Code terkait event
+        await connection.execute("DELETE FROM qr_codes WHERE id_event = ?", [id_event]);
+        console.log("✅ QR Code terkait event berhasil dihapus");
+
+        // Hapus event jika valid
+        await connection.execute("DELETE FROM events WHERE id_event = ?", [id_event]);
+        console.log("✅ Event berhasil dihapus");
+
+        res.status(200).json({ message: "Event dan QR Code berhasil dihapus" });
+    } catch (error) {
+        console.error("🚨 Error saat menghapus event dan QR Code:", error);
+        res.status(500).json({ error: "Gagal menghapus event dan QR Code", details: error.message });
     } finally {
         if (connection) await connection.end();
     }
