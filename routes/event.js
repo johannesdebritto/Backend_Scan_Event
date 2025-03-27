@@ -125,6 +125,52 @@ router.get("/ambil-edit/:id", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
+//edit
+router.put("/update/:id", verifyFirebaseToken, async(req, res) => {
+    const { id } = req.params;
+    const { nama_event, tanggal, kota, kabupaten } = req.body;
+    const firebase_uid = req.user && req.user.firebase_uid;
+
+    console.log("🟡 Menerima permintaan PUT /update/" + id);
+    console.log("🔍 UID dari Firebase:", firebase_uid);
+    console.log("📦 Data yang diterima:", req.body);
+
+    if (!firebase_uid) {
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    if (!id || !nama_event || !tanggal || !kota || !kabupaten) {
+        return res.status(400).json({ error: "Semua field harus diisi" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Periksa apakah event ada dan milik pengguna yang login
+        const [event] = await connection.execute(
+            "SELECT id_event FROM events WHERE id_event = ? AND firebase_uid = ?", [id, firebase_uid]
+        );
+
+        if (event.length === 0) {
+            return res.status(404).json({ error: "Event tidak ditemukan atau akses ditolak" });
+        }
+
+        // Update event
+        await connection.execute(
+            "UPDATE events SET nama_event = ?, tanggal = ?, kota = ?, kabupaten = ? WHERE id_event = ?", [nama_event, tanggal, kota, kabupaten, id]
+        );
+
+        console.log("✅ Event berhasil diperbarui!");
+        res.status(200).json({ message: "Event berhasil diperbarui" });
+
+    } catch (error) {
+        console.error("🚨 Error saat mengedit event:", error);
+        res.status(500).json({ error: "Gagal memperbarui event", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
 
 
 
