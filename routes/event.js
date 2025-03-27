@@ -93,8 +93,8 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
     }
 });
 
-//edit
-router.get("/edit/:id", verifyFirebaseToken, async(req, res) => {
+//ambil-edit
+router.get("/ambil-edit/:id", verifyFirebaseToken, async(req, res) => {
     const { id } = req.params;
     const firebase_uid = req.user && req.user.firebase_uid;
 
