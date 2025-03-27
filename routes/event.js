@@ -94,63 +94,33 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
 });
 
 //edit
-router.put("/edit/:id", verifyFirebaseToken, async(req, res) => {
+router.get("/:id", verifyFirebaseToken, async(req, res) => {
     const { id } = req.params;
-    const { nama_event, tanggal, kota, kabupaten } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
-    console.log("🟡 Menerima permintaan PUT /edit/" + id);
-    console.log("🔍 UID dari Firebase:", firebase_uid);
-    console.log("📦 Data yang diterima:", req.body);
-
-    if (!firebase_uid) {
-        console.error("🔴 UID tidak ditemukan dalam request!");
-        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
-    }
-
-    if (!id || !nama_event || !tanggal || !kota || !kabupaten) {
-        console.error("⚠️ Debug: Ada field yang kosong!");
-        return res.status(400).json({ error: "Semua field harus diisi" });
-    }
-
-    // Konversi format tanggal
-    const formattedDate = convertDateFormat(tanggal);
-    if (!formattedDate) {
-        console.error("⚠️ Format tanggal salah, seharusnya DD-MM-YYYY!");
-        return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
-    }
+    console.log("🔍 Mengambil data event dengan ID:", id);
 
     let connection;
     try {
         connection = await connectDB();
 
-        console.log("🟡 Mengupdate event dengan ID:", id);
-
-        // Periksa apakah event dengan ID ini ada dan milik pengguna yang sedang login
         const [event] = await connection.execute(
-            "SELECT id_event FROM events WHERE id_event = ? AND firebase_uid = ?", [id, firebase_uid]
+            "SELECT * FROM events WHERE id_event = ? AND firebase_uid = ?", [id, firebase_uid]
         );
 
         if (event.length === 0) {
-            console.error("❌ Event tidak ditemukan atau bukan milik user ini!");
             return res.status(404).json({ error: "Event tidak ditemukan atau akses ditolak" });
         }
 
-        // Update event
-        await connection.execute(
-            "UPDATE events SET nama_event = ?, tanggal = ?, kota = ?, kabupaten = ? WHERE id_event = ?", [nama_event, formattedDate, kota, kabupaten, id]
-        );
-
-        console.log("✅ Event berhasil diperbarui!");
-        res.status(200).json({ message: "Event berhasil diperbarui" });
-
+        res.status(200).json(event[0]); // Kirim data event ke frontend
     } catch (error) {
-        console.error("🚨 Error saat mengedit event:", error);
-        res.status(500).json({ error: "Gagal memperbarui event", details: error.message });
+        console.error("🚨 Error mengambil event:", error);
+        res.status(500).json({ error: "Gagal mengambil event", details: error.message });
     } finally {
         if (connection) await connection.end();
     }
 });
+
 
 
 // Simpan hasil scan QR code
