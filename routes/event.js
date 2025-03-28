@@ -124,7 +124,7 @@ router.get("/ambil-edit/:id", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
-//edit
+// Edit Event
 router.put("/update/:id", verifyFirebaseToken, async(req, res) => {
     const { id } = req.params;
     const { nama_event, tanggal, kota, kabupaten } = req.body;
@@ -142,11 +142,18 @@ router.put("/update/:id", verifyFirebaseToken, async(req, res) => {
         return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
+    // ✅ Konversi format tanggal sebelum simpan
+    const formattedDate = convertDateFormat(tanggal);
+    if (!formattedDate) {
+        console.error("⚠️ Format tanggal salah, seharusnya DD-MM-YYYY!");
+        return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
+    }
+
     let connection;
     try {
         connection = await connectDB();
 
-        // Periksa apakah event ada dan milik pengguna yang login
+        // Periksa apakah event ada dan milik pengguna
         const [event] = await connection.execute(
             "SELECT id_event FROM events WHERE id_event = ? AND firebase_uid = ?", [id, firebase_uid]
         );
@@ -155,9 +162,9 @@ router.put("/update/:id", verifyFirebaseToken, async(req, res) => {
             return res.status(404).json({ error: "Event tidak ditemukan atau akses ditolak" });
         }
 
-        // Update event
+        // Update event dengan tanggal yang sudah dikonversi
         await connection.execute(
-            "UPDATE events SET nama_event = ?, tanggal = ?, kota = ?, kabupaten = ? WHERE id_event = ?", [nama_event, tanggal, kota, kabupaten, id]
+            "UPDATE events SET nama_event = ?, tanggal = ?, kota = ?, kabupaten = ? WHERE id_event = ?", [nama_event, formattedDate, kota, kabupaten, id]
         );
 
         console.log("✅ Event berhasil diperbarui!");
@@ -170,7 +177,6 @@ router.put("/update/:id", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
-
 
 
 // Simpan hasil scan QR code
