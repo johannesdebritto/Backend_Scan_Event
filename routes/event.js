@@ -41,14 +41,14 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
-    // Konversi format tanggal
+    // ✅ Konversi format tanggal dari DD-MM-YYYY ke YYYY-MM-DD sebelum simpan ke database
     const formattedDate = convertDateFormat(tanggal);
     if (!formattedDate) {
         console.error("⚠️ Format tanggal salah, seharusnya DD-MM-YYYY!");
         return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
     }
 
-    // Dapatkan waktu dalam format WIB
+    // ✅ Dapatkan waktu saat ini dalam format WIB
     const waktuDibuat = getCurrentTimeWIB();
 
     let connection;
@@ -58,13 +58,13 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         console.log("🟢 Data yang akan disimpan:", {
             firebase_uid,
             nama_event,
-            formattedDate,
+            formattedDate, // ✅ Sudah dalam format YYYY-MM-DD
             kota,
             kabupaten,
             waktuDibuat,
         });
 
-        // **Ambil ID status untuk "dipakai" dari tabel status**
+        // Ambil ID status "dipakai" dari tabel status
         const [status] = await connection.execute(
             "SELECT id_status FROM status WHERE nama_status = 'dipakai' LIMIT 1"
         );
@@ -76,7 +76,7 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
 
         const id_status = status[0].id_status; // ID status dari database
 
-        // **Simpan data event dengan id_status yang diambil dari database**
+        // Simpan data event ke database
         const [result] = await connection.execute(
             "INSERT INTO events (firebase_uid, nama_event, tanggal, kota, kabupaten, id_status, waktu_dibuat) VALUES (?, ?, ?, ?, ?, ?, ?)", [firebase_uid, nama_event, formattedDate, kota, kabupaten, id_status, waktuDibuat]
         );
@@ -92,7 +92,6 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
-
 //ambil-edit
 router.get("/ambil-edit/:id", verifyFirebaseToken, async(req, res) => {
     const { id } = req.params;
