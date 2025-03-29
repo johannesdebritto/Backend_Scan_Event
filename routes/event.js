@@ -412,6 +412,39 @@ router.put("/scan-complete", verifyFirebaseToken, async(req, res) => {
     }
 });
 
+// Cek apakah semua QR Code dalam event sudah selesai
+router.get("/event-statuscheck/:id_event/check-status", verifyFirebaseToken, async(req, res) => {
+    const { id_event } = req.params;
+
+    console.log(`🔍 Mengecek status QR Code di event ${id_event}`);
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Cek apakah masih ada QR Code dengan status 2 (dipakai)
+        const [result] = await connection.execute(
+            "SELECT COUNT(*) AS jumlah FROM qr_codes WHERE id_event = ? AND id_status = 2", [id_event]
+        );
+
+        const masihDipakai = result[0].jumlah > 0;
+
+        if (masihDipakai) {
+            console.log("⚠️ Masih ada QR Code yang belum selesai!");
+            return res.json({ selesai: false });
+        }
+
+        console.log("✅ Semua QR Code sudah selesai!");
+        return res.json({ selesai: true });
+
+    } catch (error) {
+        console.error("🚨 Error saat mengecek status QR Code:", error);
+        res.status(500).json({ error: "Gagal mengecek status QR Code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
 
 // Ambil daftar event berdasarkan Firebase UID
 router.get("/tampil", verifyFirebaseToken, async(req, res) => {
