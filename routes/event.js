@@ -349,6 +349,68 @@ router.delete("/hapus-scan", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
+//selesaikan qr
+
+// Perbarui status QR Code menjadi selesai
+router.put("/scan-complete", verifyFirebaseToken, async(req, res) => {
+    const { qr_code } = req.body;
+    const firebase_uid = req.user && req.user.firebase_uid;
+
+    console.log("🟡 Memproses penyelesaian QR code:", qr_code);
+    console.log("🔍 Firebase UID:", firebase_uid);
+
+    if (!firebase_uid) {
+        console.error("🔴 UID tidak ditemukan dalam request!");
+        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+    }
+
+    if (!qr_code) {
+        console.error("⚠️ QR Code kosong!");
+        return res.status(400).json({ error: "QR Code harus diisi" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // **Ambil event ID terakhir berdasarkan Firebase UID**
+        const [event] = await connection.execute(
+            "SELECT id_event FROM events WHERE firebase_uid = ? ORDER BY id_event DESC LIMIT 1", [firebase_uid]
+        );
+
+        if (event.length === 0) {
+            console.error("⚠️ Tidak ada event yang ditemukan untuk UID ini!");
+            return res.status(404).json({ error: "Event tidak ditemukan untuk pengguna ini" });
+        }
+
+        const id_event = event[0].id_event;
+        console.log("📌 ID Event ditemukan:", id_event);
+
+        // **Cek apakah QR Code ada dalam event ini**
+        const [existingQR] = await connection.execute(
+            "SELECT * FROM qr_codes WHERE id_event = ? AND qr_code = ?", [id_event, qr_code]
+        );
+
+        if (existingQR.length === 0) {
+            console.warn("⚠️ QR Code tidak ditemukan dalam event ini!");
+            return res.status(404).json({ error: "QR Code tidak ditemukan dalam event ini" });
+        }
+
+        // **Update status QR Code menjadi 'selesai'**
+        await connection.execute(
+            "UPDATE qr_codes SET id_status = ? WHERE id_event = ? AND qr_code = ?", [1, id_event, qr_code] // 1 = Selesai
+        );
+
+        console.log("✅ QR Code berhasil diperbarui menjadi 'selesai'!");
+        res.status(200).json({ message: "QR Code berhasil diselesaikan", id_event });
+
+    } catch (error) {
+        console.error("🚨 Error saat memperbarui QR code:", error);
+        res.status(500).json({ error: "Gagal memperbarui QR code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
 
 
 // Ambil daftar event berdasarkan Firebase UID
