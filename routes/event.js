@@ -11,11 +11,21 @@ function convertDateFormat(dateStr) {
     return `${year}-${month}-${day}`;
 }
 
+// Fungsi untuk mendapatkan tanggal sekarang dalam format YYYY-MM-DD (WIB)
+function getCurrentDateWIB() {
+    const now = new Date();
+    now.setHours(now.getHours() + 7); // Ubah ke WIB
+    now.setDate(now.getDate() + 1); // Koreksi tanggal +1 agar tidak telat
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 // Fungsi untuk mendapatkan waktu sekarang dalam format HH:mm:ss (WIB)
 function getCurrentTimeWIB() {
-    const now = new Date(); // Waktu saat ini dalam UTC
-    now.setHours(now.getHours() + 7); // Tambah 7 jam untuk WIB
-    now.setDate(now.getDate() + 1); // Tambah 1 hari agar sesuai Indonesia
+    const now = new Date();
+    now.setHours(now.getHours() + 7);
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
@@ -49,8 +59,9 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
         return res.status(400).json({ error: "Format tanggal tidak valid. Gunakan format DD-MM-YYYY" });
     }
 
-    // ✅ Dapatkan waktu saat ini dalam format WIB
-    const waktuDibuat = getCurrentTimeWIB();
+    // ✅ Dapatkan waktu & tanggal saat ini dalam format WIB
+    const waktuDibuat = `${getCurrentDateWIB()} ${getCurrentTimeWIB()}`;
+
 
     let connection;
     try {
@@ -226,7 +237,7 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
         }
 
         const scanDate = new Date().toLocaleDateString("id-ID").split("/").reverse().join("-"); // YYYY-MM-DD (WIB)
-        const scanTime = getCurrentTimeWIB(); // HH:mm:ss (WIB)
+        const scanTime = `${getCurrentDateWIB()} ${getCurrentTimeWIB()}`;
 
         await connection.execute(
             "INSERT INTO qr_codes (id_event, firebase_uid, qr_code, scan_date, scan_time, id_status) VALUES (?, ?, ?, ?, ?, ?)", [id_event, firebase_uid, qr_code, scanDate, scanTime, 2]
