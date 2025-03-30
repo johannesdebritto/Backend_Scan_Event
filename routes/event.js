@@ -15,6 +15,7 @@ function convertDateFormat(dateStr) {
 function getCurrentTimeWIB() {
     const now = new Date(); // Waktu saat ini dalam UTC
     now.setHours(now.getHours() + 7); // Tambah 7 jam untuk WIB
+    now.setDate(now.getDate() + 1); // Tambah 1 hari agar sesuai Indonesia
     const hours = String(now.getHours()).padStart(2, "0");
     const minutes = String(now.getMinutes()).padStart(2, "0");
     const seconds = String(now.getSeconds()).padStart(2, "0");
