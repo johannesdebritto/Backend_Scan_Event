@@ -79,11 +79,11 @@ router.post("/simpan", verifyFirebaseToken, async(req, res) => {
 
         // Ambil ID status "dipakai" dari tabel status
         const [status] = await connection.execute(
-            "SELECT id_status FROM status WHERE nama_status = 'dipakai' LIMIT 1"
+            "SELECT id_status FROM status WHERE nama_status = 'Dipakai' LIMIT 1"
         );
 
         if (status.length === 0) {
-            console.error("❌ Status 'dipakai' tidak ditemukan di database!");
+            console.error("❌ Status 'Dipakai' tidak ditemukan di database!");
             return res.status(500).json({ error: "Gagal menemukan status default" });
         }
 
@@ -245,7 +245,7 @@ router.post("/scan", verifyFirebaseToken, async(req, res) => {
         );
 
 
-        console.log("✅ QR Code berhasil disimpan dengan status 'dipakai'!");
+        console.log("✅ QR Code berhasil disimpan dengan status 'Dipakai'!");
         res.status(201).json({ message: "QR Code berhasil disimpan", id_event });
 
     } catch (error) {
