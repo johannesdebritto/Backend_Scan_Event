@@ -477,7 +477,7 @@ router.get("/tampil", verifyFirebaseToken, async(req, res) => {
 
         // Ambil daftar event berdasarkan Firebase UID
         const [events] = await connection.execute(
-            "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, s.nama_status AS status, e.waktu_dibuat " +
+            "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.id_status, s.nama_status AS status, e.waktu_dibuat " +
             "FROM events e " +
             "JOIN status s ON e.id_status = s.id_status " +
             "WHERE e.firebase_uid = ? " +
