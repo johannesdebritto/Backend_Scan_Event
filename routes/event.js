@@ -516,7 +516,7 @@ router.get("/detail/:id_event", verifyFirebaseToken, async(req, res) => {
 
         // Ambil detail event berdasarkan id_event dan Firebase UID
         const [event] = await connection.execute(
-            `SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, s.nama_status AS status, e.waktu_dibuat 
+            `SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.id_status, s.nama_status AS status, e.waktu_dibuat  
              FROM events e
              JOIN status s ON e.id_status = s.id_status 
              WHERE e.id_event = ? AND e.firebase_uid = ?`, [id_event, firebase_uid]
