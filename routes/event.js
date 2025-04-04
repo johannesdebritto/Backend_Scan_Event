@@ -362,9 +362,8 @@ router.delete("/hapus-scan", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
-//selesaikan qr
 
-// Perbarui status QR Code menjadi selesai
+//scan selesai
 router.put("/scan-complete", verifyFirebaseToken, async(req, res) => {
     const { qr_code } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
@@ -374,56 +373,57 @@ router.put("/scan-complete", verifyFirebaseToken, async(req, res) => {
 
     if (!firebase_uid) {
         console.error("🔴 UID tidak ditemukan dalam request!");
-        return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
+        return res.status(401).json({ success: false });
     }
 
     if (!qr_code) {
         console.error("⚠️ QR Code kosong!");
-        return res.status(400).json({ error: "QR Code harus diisi" });
+        return res.status(400).json({ success: false });
     }
 
     let connection;
     try {
         connection = await connectDB();
 
-        // **Ambil event ID terakhir berdasarkan Firebase UID**
+        // Ambil event ID terakhir berdasarkan Firebase UID
         const [event] = await connection.execute(
             "SELECT id_event FROM events WHERE firebase_uid = ? ORDER BY id_event DESC LIMIT 1", [firebase_uid]
         );
 
         if (event.length === 0) {
             console.error("⚠️ Tidak ada event yang ditemukan untuk UID ini!");
-            return res.status(404).json({ error: "Event tidak ditemukan untuk pengguna ini" });
+            return res.status(404).json({ success: false });
         }
 
         const id_event = event[0].id_event;
         console.log("📌 ID Event ditemukan:", id_event);
 
-        // **Cek apakah QR Code ada dalam event ini**
+        // Cek apakah QR Code ada dalam event ini
         const [existingQR] = await connection.execute(
             "SELECT * FROM qr_codes WHERE id_event = ? AND qr_code = ?", [id_event, qr_code]
         );
 
         if (existingQR.length === 0) {
             console.warn("⚠️ QR Code tidak ditemukan dalam event ini!");
-            return res.status(404).json({ error: "QR Code tidak ditemukan dalam event ini" });
+            return res.status(404).json({ success: false });
         }
 
-        // **Update status QR Code menjadi 'selesai'**
+        // Update status QR Code menjadi 'selesai'
         await connection.execute(
             "UPDATE qr_codes SET id_status = ? WHERE id_event = ? AND qr_code = ?", [1, id_event, qr_code] // 1 = Selesai
         );
 
         console.log("✅ QR Code berhasil diperbarui menjadi 'selesai'!");
-        res.status(200).json({ message: "QR Code berhasil diselesaikan", id_event });
+        return res.status(200).json({ success: true, id_event });
 
     } catch (error) {
         console.error("🚨 Error saat memperbarui QR code:", error);
-        res.status(500).json({ error: "Gagal memperbarui QR code", details: error.message });
+        return res.status(500).json({ success: false });
     } finally {
         if (connection) await connection.end();
     }
 });
+
 
 // Cek apakah semua QR Code dalam event sudah selesai
 router.get("/event-statuscheck/:id_event/check-status", verifyFirebaseToken, async(req, res) => {
