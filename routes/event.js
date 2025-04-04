@@ -362,7 +362,7 @@ router.delete("/hapus-scan", verifyFirebaseToken, async(req, res) => {
         if (connection) await connection.end();
     }
 });
-//selesai
+//selesai-scan
 router.put("/scan-complete", verifyFirebaseToken, async(req, res) => {
     const { qr_code, id_event } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
@@ -618,6 +618,52 @@ router.delete("/hapus/:id_event", verifyFirebaseToken, async(req, res) => {
     } catch (error) {
         console.error("🚨 Error saat menghapus event dan QR Code:", error);
         res.status(500).json({ error: "Gagal menghapus event dan QR Code", details: error.message });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
+
+// Tandai event sebagai selesai
+router.put("/event-selesai", verifyFirebaseToken, async(req, res) => {
+    const { id_event } = req.body;
+    const firebase_uid = req.user && req.user.firebase_uid;
+
+    console.log("🟡 Menyelesaikan event:", id_event);
+    console.log("🔐 UID:", firebase_uid);
+
+    if (!firebase_uid) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    if (!id_event) {
+        return res.status(400).json({ success: false, message: "ID Event diperlukan" });
+    }
+
+    let connection;
+    try {
+        connection = await connectDB();
+
+        // Cek apakah event milik user
+        const [event] = await connection.execute(
+            "SELECT * FROM events WHERE id_event = ? AND firebase_uid = ?", [id_event, firebase_uid]
+        );
+
+        if (event.length === 0) {
+            return res.status(404).json({ success: false, message: "Event tidak ditemukan atau tidak valid" });
+        }
+
+        // Update status jadi selesai (misal 1 = selesai)
+        await connection.execute(
+            "UPDATE events SET id_status = ? WHERE id_event = ?", [1, id_event]
+        );
+
+        console.log("✅ Event berhasil ditandai sebagai selesai!");
+        return res.status(200).json({ success: true, message: "Event diselesaikan!" });
+
+    } catch (err) {
+        console.error("🚨 Gagal menyelesaikan event:", err);
+        return res.status(500).json({ success: false, message: "Server error" });
     } finally {
         if (connection) await connection.end();
     }
