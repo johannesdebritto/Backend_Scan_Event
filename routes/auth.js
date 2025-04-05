@@ -97,7 +97,7 @@ router.post('/send-verification-email', async(req, res) => {
         res.status(500).json({ error: 'Gagal mengirim email verifikasi.' });
     }
 });
-
+//login
 router.post('/login', async(req, res) => {
     const { email, password } = req.body;
 
@@ -124,39 +124,46 @@ router.post('/login', async(req, res) => {
                 returnSecureToken: true,
             });
 
-            // Login berhasil, kirim token dan pesan sukses
+            // Ambil data user dari MySQL berdasarkan firebase_uid
+            const [userRows] = await db.execute(
+                'SELECT username FROM users WHERE firebase_uid = ?', [userRecord.uid]
+            );
+
+            if (userRows.length === 0) {
+                return res.status(404).json({ error: 'Pengguna tidak ditemukan di database lokal.' });
+            }
+
+            const username = userRows[0].username;
+
+            // Login berhasil, kirim token dan informasi user
             return res.status(200).json({
                 message: 'Login berhasil.',
                 idToken: response.data.idToken,
                 refreshToken: response.data.refreshToken,
+                username: username,
+                uid: userRecord.uid,
             });
         } catch (error) {
             console.error('Error response from Firebase:', error.response ? error.response.data : error.message);
 
-            // Memeriksa respons error dari Firebase
             if (error.response && error.response.data) {
                 const firebaseError = error.response.data.error.message;
 
-                // Jika email tidak ditemukan
                 if (firebaseError === 'EMAIL_NOT_FOUND') {
                     return res.status(404).json({ error: 'Email tidak terdaftar.' });
                 }
 
-                // Jika password salah, gunakan 401 (Unauthorized)
                 if (firebaseError === 'INVALID_PASSWORD' || firebaseError === 'INVALID_LOGIN_CREDENTIALS') {
                     return res.status(401).json({ error: 'Password salah.' });
                 }
 
-                // Tangani error lain jika ada
                 return res.status(400).json({ error: 'Terjadi kesalahan saat login.' });
             }
 
-            // Jika ada kesalahan lain, tampilkan pesan generik
             console.error('Kesalahan saat login:', error.message);
             return res.status(500).json({ error: 'Terjadi kesalahan saat login.' });
         }
     } catch (error) {
-        // Penanganan kesalahan server atau email tidak ditemukan
         if (error.code === 'auth/user-not-found') {
             return res.status(404).json({ error: 'Email tidak terdaftar.' });
         }
