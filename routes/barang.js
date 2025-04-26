@@ -79,7 +79,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
             return res.status(400).json({ error: err.message });
         }
 
-        const { name, quantity, code, brand, merek_barang } = req.body;
+        const { name, quantity, code, brand } = req.body;
         const firebase_uid = req.user && req.user.firebase_uid;
 
         console.log("🟢 Menerima permintaan POST /api/barang");
@@ -90,7 +90,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
             return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
         }
 
-        if (!name || !quantity || !code || !brand || !merek_barang) {
+        if (!name || !quantity || !code || !brand) {
             return res.status(400).json({ error: "Semua field harus diisi" });
         }
 
@@ -110,8 +110,8 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
             const [result] = await connection.execute(
                 `INSERT INTO items (
-          firebase_uid, name, quantity, code, brand, merek_barang, image_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`, [firebase_uid, name, quantity, code, brand, merek_barang, imageUrl]
+                  firebase_uid, name, quantity, code, brand, image_url
+              ) VALUES (?, ?, ?, ?, ?, ?)`, [firebase_uid, name, quantity, code, brand, imageUrl]
             );
 
             await connection.commit();
