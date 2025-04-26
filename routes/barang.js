@@ -106,7 +106,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
             // Simpan path sesuai dengan folder UID
             const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
 
-            console.log("🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
+            console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
 
             const [result] = await connection.execute(
                 `INSERT INTO items (
@@ -115,11 +115,11 @@ router.post("/", verifyFirebaseToken, (req, res) => {
             );
 
             await connection.commit();
-            console.log("🟢 Barang berhasil ditambahkan! ID:", result.insertId);
+            console.log("🟢🟢🟢 Barang berhasil ditambahkan! ID:", result.insertId);
             res.status(201).json({ message: "Barang berhasil ditambahkan", itemId: result.insertId });
         } catch (error) {
             if (connection) await connection.rollback();
-            console.error("🔴 Error saat menyimpan barang:", error);
+            console.error("🔴🔴🔴 Error saat menyimpan barang:", error);
             res.status(500).json({ error: "Gagal menambahkan barang", details: error.message });
         } finally {
             if (connection) await connection.end();
