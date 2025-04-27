@@ -6,14 +6,21 @@ const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
 
-// Pastikan folder `images` dan `qr_codes` ada
+// Pastikan folder 'images' dan 'qr_codes' ada
 const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
 const qrCodeFolder = path.join(__dirname, "../qr_codes"); // Folder untuk gambar QR Code
 
 // Membuat folder jika belum ada
 [imageFolder, qrCodeFolder].forEach((folder) => {
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder, { recursive: true });
+  try {
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+      console.log(`Folder dibuat: ${folder}`);
+    } else {
+      console.log(`Folder sudah ada: ${folder}`);
+    }
+  } catch (err) {
+    console.error(`Gagal membuat folder ${folder}:`, err);
   }
 });
 
@@ -31,15 +38,19 @@ const storage = multer.diskStorage({
     if (file.fieldname === "image") {
       uploadFolder = path.join(__dirname, "../images", firebase_uid); // Folder gambar barang
     } else if (file.fieldname === "qr_code_image") {
-      // Field name untuk QR Code yang benar
       uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid); // Folder QR Code
     } else {
       return cb(new Error("Invalid field name"), false);
     }
 
     // Buat folder jika belum ada
-    if (!fs.existsSync(uploadFolder)) {
-      fs.mkdirSync(uploadFolder, { recursive: true });
+    try {
+      if (!fs.existsSync(uploadFolder)) {
+        fs.mkdirSync(uploadFolder, { recursive: true });
+        console.log(`Folder tujuan dibuat: ${uploadFolder}`);
+      }
+    } catch (err) {
+      console.error(`Gagal membuat folder ${uploadFolder}:`, err);
     }
 
     console.log(`📂 Folder tujuan: ${uploadFolder}`);
