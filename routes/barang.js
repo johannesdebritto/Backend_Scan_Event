@@ -79,21 +79,25 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    const { name, quantity, code, brand, qrCodeFile } = req.body; // qrCodeFile ditambahkan
+    // Ambil data dari body dan files
+    const { name, quantity, code, brand } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
     console.log("🟢 Menerima permintaan POST /api/barang");
     console.log("🔍 UID dari Firebase:", firebase_uid);
 
+    // Validasi UID
     if (!firebase_uid) {
       console.error("🔴 UID tidak ditemukan dalam request!");
       return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
     }
 
+    // Validasi field lainnya
     if (!name || !quantity || !code || !brand) {
       return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
+    // Validasi apakah gambar ada
     if (!req.files || !req.files["image"]) {
       return res.status(400).json({ error: "Gambar barang harus diunggah" });
     }
@@ -106,7 +110,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       // Simpan path gambar barang sesuai dengan folder UID
       const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
 
-      // Simpan path file QR Code
+      // Simpan path file QR Code jika ada
       let qrCodeUrl = null;
       if (req.files["qr_code_image"]) {
         qrCodeUrl = `${firebase_uid}/qr_codes/${req.files["qr_code_image"][0].filename}`;
@@ -114,15 +118,17 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
 
+      // Query INSERT untuk menyimpan data barang
       const [result] = await connection.execute(
         `INSERT INTO items (
-                    firebase_uid, name, quantity, code, brand, image_url, qr_code_url
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [firebase_uid, name, quantity, code, brand, imageUrl, qrCodeUrl] // Simpan qrCodeUrl
+            firebase_uid, name, quantity, code, brand, image_url, qr_code_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [firebase_uid, name, quantity, code, brand, imageUrl, qrCodeUrl]
       );
 
       await connection.commit();
       console.log("🟢🟢🟢 Barang berhasil ditambahkan! ID:", result.insertId);
+
       res.status(201).json({ message: "Barang berhasil ditambahkan", itemId: result.insertId });
     } catch (error) {
       if (connection) await connection.rollback();
