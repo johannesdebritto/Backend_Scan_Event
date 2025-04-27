@@ -6,6 +6,7 @@ const authRoutes = require("./routes/auth"); // Import route auth
 const barangRoutes = require("./routes/barang"); // Import route barang
 const eventRouter = require("./routes/event");
 
+const fs = require("fs"); // Import module fs
 const path = require("path");
 
 const app = express();
@@ -39,9 +40,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files (gambar & QR Code)
-app.use("/images", express.static(path.join(__dirname, "images")));
-app.use("/qr_codes", express.static(path.join(__dirname, "qr_codes"))); // Ganti barcodes menjadi qr_codes
+// Create 'images' and 'qr_codes' folders if they do not exist
+const createFolderIfNotExists = (folderPath) => {
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+    console.log(`✅ Folder ${folderPath} telah dibuat!`);
+  }
+};
+
+// Ensure folders exist
+createFolderIfNotExists(path.join(__dirname, "images"));
+createFolderIfNotExists(path.join(__dirname, "qr_codes"));
 
 // Routes
 app.use("/api/auth", authRoutes); // Hubungkan route auth
