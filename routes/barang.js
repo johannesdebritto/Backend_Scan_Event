@@ -6,9 +6,23 @@ const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
 
-// Tentukan folder 'images' dan 'qr_codes' yang sudah ada secara manual
+// Pastikan folder 'images' dan 'qr_codes' ada
 const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
 const qrCodeFolder = path.join(__dirname, "../qr_codes"); // Folder untuk gambar QR Code
+
+// Membuat folder jika belum ada
+[imageFolder, qrCodeFolder].forEach((folder) => {
+  try {
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+      console.log(`Folder dibuat: ${folder}`);
+    } else {
+      console.log(`Folder sudah ada: ${folder}`);
+    }
+  } catch (err) {
+    console.error(`Gagal membuat folder ${folder}:`, err);
+  }
+});
 
 // Konfigurasi Multer dengan UID Firebase
 const storage = multer.diskStorage({
@@ -22,16 +36,21 @@ const storage = multer.diskStorage({
 
     // Tentukan folder berdasarkan jenis file
     if (file.fieldname === "image") {
-      uploadFolder = path.join(imageFolder, firebase_uid); // Folder gambar barang
+      uploadFolder = path.join(__dirname, "../images", firebase_uid); // Folder gambar barang
     } else if (file.fieldname === "qr_code_image") {
-      uploadFolder = path.join(qrCodeFolder, firebase_uid); // Folder QR Code
+      uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid); // Folder QR Code
     } else {
       return cb(new Error("Invalid field name"), false);
     }
 
-    // Cek apakah folder sudah ada, jika belum akan diupload langsung
-    if (!fs.existsSync(uploadFolder)) {
-      return cb(new Error(`Folder ${uploadFolder} tidak ditemukan`), false);
+    // Buat folder jika belum ada
+    try {
+      if (!fs.existsSync(uploadFolder)) {
+        fs.mkdirSync(uploadFolder, { recursive: true });
+        console.log(`Folder tujuan dibuat: ${uploadFolder}`);
+      }
+    } catch (err) {
+      console.error(`Gagal membuat folder ${uploadFolder}:`, err);
     }
 
     console.log(`📂 Folder tujuan: ${uploadFolder}`);
@@ -132,7 +151,6 @@ router.post("/", verifyFirebaseToken, (req, res) => {
     }
   });
 });
-
 //
 //ambil data barang
 router.get("/", verifyFirebaseToken, async (req, res) => {
