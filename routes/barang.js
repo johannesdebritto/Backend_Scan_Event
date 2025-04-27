@@ -6,12 +6,12 @@ const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
 
-// Pastikan folder `images` dan `barcodes` ada
+// Pastikan folder `images` dan `qr_codes` ada
 const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
-const barcodeFolder = path.join(__dirname, "../barcodes"); // Folder untuk gambar barcode
+const qrCodeFolder = path.join(__dirname, "../qr_codes"); // Folder untuk gambar QR Code
 
 // Membuat folder jika belum ada
-[imageFolder, barcodeFolder].forEach((folder) => {
+[imageFolder, qrCodeFolder].forEach((folder) => {
   if (!fs.existsSync(folder)) {
     fs.mkdirSync(folder, { recursive: true });
   }
@@ -30,8 +30,9 @@ const storage = multer.diskStorage({
     // Tentukan folder berdasarkan jenis file
     if (file.fieldname === "image") {
       uploadFolder = path.join(__dirname, "../images", firebase_uid);
-    } else if (file.fieldname === "barcodeImage") {
-      uploadFolder = path.join(__dirname, "../barcodes", firebase_uid);
+    } else if (file.fieldname === "qr_code_image") {
+      // Field name untuk QR Code yang benar
+      uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid);
     } else {
       return cb(new Error("Invalid field name"), false);
     }
@@ -69,7 +70,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
 }).fields([
   { name: "image", maxCount: 1 },
-  { name: "barcodeImage", maxCount: 1 },
+  { name: "qr_code_image", maxCount: 1 }, // Perbaiki nama field QR Code
 ]);
 
 // Upload gambar barang dan QR Code dengan Firebase UID
