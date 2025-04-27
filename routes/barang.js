@@ -72,14 +72,14 @@ const upload = multer({
   { name: "barcodeImage", maxCount: 1 },
 ]);
 
-// Upload gambar barang dengan Firebase UID
+// Upload gambar barang dan QR Code dengan Firebase UID
 router.post("/", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
-    const { name, quantity, code, brand } = req.body;
+    const { name, quantity, code, brand, qrCodeFile } = req.body; // qrCodeFile ditambahkan
     const firebase_uid = req.user && req.user.firebase_uid;
 
     console.log("🟢 Menerima permintaan POST /api/barang");
@@ -103,16 +103,22 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       connection = await connectDB();
       await connection.beginTransaction();
 
-      // Simpan path sesuai dengan folder UID
+      // Simpan path gambar barang sesuai dengan folder UID
       const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
+
+      // Simpan path file QR Code
+      let qrCodeUrl = null;
+      if (req.files["qr_code_image"]) {
+        qrCodeUrl = `${firebase_uid}/qr_codes/${req.files["qr_code_image"][0].filename}`;
+      }
 
       console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
 
       const [result] = await connection.execute(
         `INSERT INTO items (
-                  firebase_uid, name, quantity, code, brand, image_url
-              ) VALUES (?, ?, ?, ?, ?, ?)`,
-        [firebase_uid, name, quantity, code, brand, imageUrl]
+                    firebase_uid, name, quantity, code, brand, image_url, qr_code_url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [firebase_uid, name, quantity, code, brand, imageUrl, qrCodeUrl] // Simpan qrCodeUrl
       );
 
       await connection.commit();
