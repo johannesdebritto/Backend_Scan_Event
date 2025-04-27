@@ -6,9 +6,6 @@ const authRoutes = require("./routes/auth"); // Import route auth
 const barangRoutes = require("./routes/barang"); // Import route barang
 const eventRouter = require("./routes/event");
 
-const fs = require("fs"); // Import module fs
-const path = require("path");
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -39,18 +36,6 @@ app.use((req, res, next) => {
   console.log(`Request diterima: ${req.method} ${req.url}`);
   next();
 });
-
-// Create 'images' and 'qr_codes' folders if they do not exist
-const createFolderIfNotExists = (folderPath) => {
-  if (!fs.existsSync(folderPath)) {
-    fs.mkdirSync(folderPath, { recursive: true });
-    console.log(`✅ Folder ${folderPath} telah dibuat!`);
-  }
-};
-
-// Ensure folders exist
-createFolderIfNotExists(path.join(__dirname, "images"));
-createFolderIfNotExists(path.join(__dirname, "qr_codes"));
 
 // Routes
 app.use("/api/auth", authRoutes); // Hubungkan route auth
