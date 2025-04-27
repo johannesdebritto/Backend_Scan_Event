@@ -195,7 +195,6 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
   }
 });
 
-// Edit barang berdasarkan ID dan firebase_uid dari Firebase
 router.put("/:id", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -223,7 +222,6 @@ router.put("/:id", verifyFirebaseToken, (req, res) => {
       }
 
       let imageUrl = oldItem[0].image_url;
-      let barcodeImageUrl = oldItem[0].barcode_image_url;
 
       // 🔍 Jika pengguna mengunggah gambar baru, hapus gambar lama
       if (req.files && req.files["image"] && req.files["image"].length > 0) {
@@ -234,26 +232,8 @@ router.put("/:id", verifyFirebaseToken, (req, res) => {
         imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`; // Simpan gambar baru
       }
 
-      // 🔍 Jika pengguna mengunggah gambar barcode baru, hapus gambar barcode lama
-      if (req.files && req.files["barcodeImage"] && req.files["barcodeImage"].length > 0) {
-        const oldBarcodePath = path.join(__dirname, "../barcodes", barcodeImageUrl);
-        if (fs.existsSync(oldBarcodePath)) {
-          fs.unlinkSync(oldBarcodePath); // Hapus barcode lama
-        }
-        barcodeImageUrl = `${firebase_uid}/${req.files["barcodeImage"][0].filename}`; // Simpan barcode baru
-      }
-
       // 🔄 Update data di database
-      await connection.execute("UPDATE items SET name = ?, quantity = ?, code = ?, brand = ?, image_url = ?, barcode_image_url = ? WHERE id = ? AND firebase_uid = ?", [
-        name,
-        quantity,
-        code,
-        brand,
-        imageUrl,
-        barcodeImageUrl,
-        id,
-        firebase_uid,
-      ]);
+      await connection.execute("UPDATE items SET name = ?, quantity = ?, code = ?, brand = ?, image_url = ? WHERE id = ? AND firebase_uid = ?", [name, quantity, code, brand, imageUrl, id, firebase_uid]);
 
       await connection.commit();
       res.status(200).json({ message: "Barang berhasil diperbarui" });
