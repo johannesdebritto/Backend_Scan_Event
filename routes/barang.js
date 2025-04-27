@@ -29,10 +29,10 @@ const storage = multer.diskStorage({
 
     // Tentukan folder berdasarkan jenis file
     if (file.fieldname === "image") {
-      uploadFolder = path.join(__dirname, "../images", firebase_uid);
+      uploadFolder = path.join(__dirname, "../images", firebase_uid); // Folder gambar barang
     } else if (file.fieldname === "qr_code_image") {
       // Field name untuk QR Code yang benar
-      uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid);
+      uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid); // Folder QR Code
     } else {
       return cb(new Error("Invalid field name"), false);
     }
