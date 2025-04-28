@@ -181,7 +181,7 @@ router.get("/", verifyFirebaseToken, async (req, res) => {
   }
 });
 
-//delete
+// DELETE barang
 router.delete("/:id", verifyFirebaseToken, async (req, res) => {
   const { id } = req.params;
   const firebase_uid = req.user.firebase_uid;
@@ -190,7 +190,7 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
   try {
     connection = await connectDB();
 
-    // 🔍 Cek apakah barang dengan ID tersebut benar-benar milik firebase_uid yang sedang login
+    // 🔍 Cek apakah barang milik user
     const [item] = await connection.execute("SELECT * FROM items WHERE id = ? AND firebase_uid = ?", [id, firebase_uid]);
 
     if (item.length === 0) {
@@ -204,43 +204,49 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
     await connection.execute("DELETE FROM items WHERE id = ? AND firebase_uid = ?", [id, firebase_uid]);
 
     // 📂 Hapus file gambar barang jika ada
-    const imagePath = path.join(__dirname, "..", "images", imageUrl); // Gabungkan path gambar dengan folder 'images'
-    const qrCodePath = path.join(__dirname, "..", "qr_codes", qrCodeUrl);
-
-    // Hapus gambar barang jika ada
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-      console.log(`🗑️ Gambar barang dihapus: ${imagePath}`);
-    } else {
-      console.log(`⚠️ Gambar barang tidak ditemukan: ${imagePath}`);
+    if (imageUrl) {
+      const imagePath = path.join(__dirname, "..", "images", imageUrl);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`🗑️ Gambar barang dihapus: ${imagePath}`);
+      } else {
+        console.log(`⚠️ Gambar barang tidak ditemukan: ${imagePath}`);
+      }
     }
 
-    // Hapus QR code jika ada
-    if (fs.existsSync(qrCodePath)) {
-      fs.unlinkSync(qrCodePath);
-      console.log(`🗑️ QR Code dihapus: ${qrCodePath}`);
-    } else {
-      console.log(`⚠️⚠️⚠️ QR Code tidak ditemukan: ${qrCodePath}`);
+    // 📂 Hapus file QR code jika ada
+    if (qrCodeUrl) {
+      const qrCodePath = path.join(__dirname, "..", "qr_codes", qrCodeUrl);
+      if (fs.existsSync(qrCodePath)) {
+        fs.unlinkSync(qrCodePath);
+        console.log(`🗑️ QR Code dihapus: ${qrCodePath}`);
+      } else {
+        console.log(`⚠️ QR Code tidak ditemukan: ${qrCodePath}`);
+      }
     }
 
-    // 📂 Hapus folder jika kosong
-    const removeFolder = (folderPath) => {
+    // 📂 Hapus folder user jika kosong
+    const userImageFolder = path.join(__dirname, "..", "images", firebase_uid);
+    const userQrCodeFolder = path.join(__dirname, "..", "qr_codes", firebase_uid);
+
+    const removeFolderIfEmpty = (folderPath) => {
       try {
-        const files = fs.readdirSync(folderPath);
-        if (files.length === 0) {
-          fs.rmdirSync(folderPath);
-          console.log(`🗑️ Folder dihapus: ${folderPath}`);
-        } else {
-          console.log(`📂 Folder tidak kosong: ${folderPath}`);
+        if (fs.existsSync(folderPath)) {
+          const files = fs.readdirSync(folderPath);
+          if (files.length === 0) {
+            fs.rmdirSync(folderPath);
+            console.log(`🗑️ Folder dihapus: ${folderPath}`);
+          } else {
+            console.log(`📂 Folder tidak kosong: ${folderPath}`);
+          }
         }
       } catch (err) {
         console.log(`⚠️ Gagal hapus folder: ${folderPath}`, err.message);
       }
     };
 
-    // Cek dan hapus folder jika kosong
-    removeFolder(path.join(__dirname, "..", "images"));
-    removeFolder(path.join(__dirname, "..", "qr_codes"));
+    removeFolderIfEmpty(userImageFolder);
+    removeFolderIfEmpty(userQrCodeFolder);
 
     res.status(200).json({ message: "Barang berhasil dihapus" });
   } catch (error) {
