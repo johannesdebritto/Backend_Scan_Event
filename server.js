@@ -6,6 +6,7 @@ const path = require("path"); // Menambahkan path module
 const authRoutes = require("./routes/auth"); // Import route auth
 const barangRoutes = require("./routes/barang"); // Import route barang
 const eventRouter = require("./routes/event");
+const scannerRouter = require("./routes/scanner");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -46,6 +47,7 @@ app.use("/qr_codes", express.static(path.join(__dirname, "qr_codes")));
 app.use("/api/auth", authRoutes); // Hubungkan route auth
 app.use("/api/barang", barangRoutes); // Hubungkan route barang
 app.use("/api/event", eventRouter);
+app.use("/api/scanner", scannerRouter);
 
 // Test endpoint
 app.get("/", (req, res) => {
