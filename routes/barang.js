@@ -205,7 +205,7 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
 
     // 📂 Hapus file gambar barang jika ada
     const imagePath = path.join(__dirname, "..", "images", imageUrl); // Gabungkan path gambar dengan folder 'images'
-    const qrCodePath = path.join(__dirname, "..", "qr_codes", firebase_uid, qrCodeUrl);
+    const qrCodePath = path.join(__dirname, "..", "qr_codes", qrCodeUrl);
 
     // Hapus gambar barang jika ada
     if (fs.existsSync(imagePath)) {
