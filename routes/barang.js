@@ -6,33 +6,65 @@ const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
 
-// Folder yang sudah ada manual
-const imageFolder = path.join(__dirname, "../images");
-const qrCodeFolder = path.join(__dirname, "../qr_codes");
+// Pastikan folder 'images' dan 'qr_codes' ada
+const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
+const qrCodeFolder = path.join(__dirname, "../qr_codes"); // Folder untuk gambar QR Code
 
-// Konfigurasi Multer
+// Membuat folder jika belum ada
+[imageFolder, qrCodeFolder].forEach((folder) => {
+  try {
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+      console.log(`Folder dibuat: ${folder}`);
+    } else {
+      console.log(`Folder sudah ada: ${folder}`);
+    }
+  } catch (err) {
+    console.error(`Gagal membuat folder ${folder}:`, err);
+  }
+});
+
+// Konfigurasi Multer dengan UID Firebase
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!req.user || !req.user.firebase_uid) {
       return cb(new Error("Unauthorized: UID tidak ditemukan"), false);
     }
 
-    // Langsung tentukan folder berdasarkan fieldname
+    const firebase_uid = req.user.firebase_uid; // Ambil UID dari request
+    let uploadFolder = "";
+
+    // Tentukan folder berdasarkan jenis file
     if (file.fieldname === "image") {
-      cb(null, imageFolder);
+      uploadFolder = path.join(__dirname, "../images", firebase_uid); // Folder gambar barang
     } else if (file.fieldname === "qr_code_image") {
-      cb(null, qrCodeFolder);
+      uploadFolder = path.join(__dirname, "../qr_codes", firebase_uid); // Folder QR Code
     } else {
-      cb(new Error("Invalid field name"), false);
+      return cb(new Error("Invalid field name"), false);
     }
+
+    // Buat folder jika belum ada
+    try {
+      if (!fs.existsSync(uploadFolder)) {
+        fs.mkdirSync(uploadFolder, { recursive: true });
+        console.log(`Folder tujuan dibuat: ${uploadFolder}`);
+      }
+    } catch (err) {
+      console.error(`Gagal membuat folder ${uploadFolder}:`, err);
+    }
+
+    console.log(`📂 Folder tujuan: ${uploadFolder}`);
+    cb(null, uploadFolder);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const filename = file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname);
+    console.log("📸 Filename:", filename);
     cb(null, filename);
   },
 });
 
+// Filter jenis file yang diperbolehkan
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -42,32 +74,42 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Konfigurasi Multer
 const upload = multer({
   storage,
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // Maksimal 5MB
 }).fields([
   { name: "image", maxCount: 1 },
-  { name: "qr_code_image", maxCount: 1 },
+  { name: "qr_code_image", maxCount: 1 }, // Perbaiki nama field QR Code
 ]);
 
+// Upload gambar barang dan QR Code dengan Firebase UID
 router.post("/", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message });
     }
 
+    // Ambil data dari body dan files
     const { name, quantity, code, brand } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
+    console.log("🟢 Menerima permintaan POST /api/barang");
+    console.log("🔍 UID dari Firebase:", firebase_uid);
+
+    // Validasi UID
     if (!firebase_uid) {
+      console.error("🔴 UID tidak ditemukan dalam request!");
       return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
     }
 
+    // Validasi field lainnya
     if (!name || !quantity || !code || !brand) {
       return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
+    // Validasi apakah gambar ada
     if (!req.files || !req.files["image"]) {
       return res.status(400).json({ error: "Gambar barang harus diunggah" });
     }
@@ -77,31 +119,39 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       connection = await connectDB();
       await connection.beginTransaction();
 
-      // Simpan nama file saja karena foldernya sudah tetap
-      const imageUrl = req.files["image"][0].filename;
+      // Simpan path gambar barang sesuai dengan folder UID
+      const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
 
+      // Simpan path file QR Code jika ada
       let qrCodeUrl = null;
       if (req.files["qr_code_image"]) {
-        qrCodeUrl = req.files["qr_code_image"][0].filename;
+        qrCodeUrl = `${firebase_uid}/qr_codes/${req.files["qr_code_image"][0].filename}`;
       }
 
+      console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
+
+      // Query INSERT untuk menyimpan data barang
       const [result] = await connection.execute(
         `INSERT INTO items (
-          firebase_uid, name, quantity, code, brand, image_url, qr_code_url
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            firebase_uid, name, quantity, code, brand, image_url, qr_code_url
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [firebase_uid, name, quantity, code, brand, imageUrl, qrCodeUrl]
       );
 
       await connection.commit();
+      console.log("🟢🟢🟢 Barang berhasil ditambahkan! ID:", result.insertId);
+
       res.status(201).json({ message: "Barang berhasil ditambahkan", itemId: result.insertId });
     } catch (error) {
       if (connection) await connection.rollback();
+      console.error("🔴🔴🔴 Error saat menyimpan barang:", error);
       res.status(500).json({ error: "Gagal menambahkan barang", details: error.message });
     } finally {
       if (connection) await connection.end();
     }
   });
 });
+//
 //ambil data barang
 router.get("/", verifyFirebaseToken, async (req, res) => {
   let connection;
