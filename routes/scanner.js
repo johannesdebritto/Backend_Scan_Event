@@ -13,7 +13,7 @@ router.get("/:code", verifyFirebaseToken, async (req, res) => {
     const firebase_uid = req.user ? req.user.firebase_uid : null; // Dapatkan UID dari Firebase
     const { code } = req.params; // Ambil 'code' dari URL parameter
 
-    console.log("🟢 Menerima permintaan GET /api/barang/:code");
+    console.log("🟢 Menerima permintaan GET /api/scanner/:code");
     console.log("🔍 UID dari Firebase:", firebase_uid);
     console.log("🔍 Code barang:", code);
 
