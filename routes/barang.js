@@ -122,10 +122,10 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       // Simpan path gambar barang sesuai dengan folder UID
       const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
 
-      // Simpan path file QR Code jika ada
+      // Simpan path file QR Code (tanpa nambah qr_codes lagi)
       let qrCodeUrl = null;
       if (req.files["qr_code_image"]) {
-        qrCodeUrl = `${firebase_uid}/qr_codes/${req.files["qr_code_image"][0].filename}`;
+        qrCodeUrl = `${firebase_uid}/${req.files["qr_code_image"][0].filename}`;
       }
 
       console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
