@@ -2,6 +2,7 @@ const express = require("express");
 const dotenv = require("dotenv");
 const admin = require("firebase-admin");
 const cors = require("cors");
+const path = require("path"); // Menambahkan path module
 const authRoutes = require("./routes/auth"); // Import route auth
 const barangRoutes = require("./routes/barang"); // Import route barang
 const eventRouter = require("./routes/event");
@@ -36,6 +37,10 @@ app.use((req, res, next) => {
   console.log(`Request diterima: ${req.method} ${req.url}`);
   next();
 });
+
+// Menyajikan file statis dari folder images dan qr_codes
+app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/qr_codes", express.static(path.join(__dirname, "qr_codes")));
 
 // Routes
 app.use("/api/auth", authRoutes); // Hubungkan route auth
