@@ -180,8 +180,7 @@ router.get("/", verifyFirebaseToken, async (req, res) => {
     if (connection) await connection.end();
   }
 });
-
-// Hapus barang berdasarkan ID dan firebase_uid dari Firebase
+//delete
 router.delete("/:id", verifyFirebaseToken, async (req, res) => {
   const { id } = req.params;
   const firebase_uid = req.user.firebase_uid;
@@ -203,11 +202,33 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
     await connection.execute("DELETE FROM items WHERE id = ? AND firebase_uid = ?", [id, firebase_uid]);
 
     // 📂 Hapus file gambar barang jika ada
-    const imagePath = path.join(__dirname, "../images", imageUrl);
+    if (imageUrl) {
+      // Ambil path file gambar dari URL
+      const imageRelativePath = new URL(imageUrl).pathname; // Ambil path seperti /qr_codes/...
+      const imagePath = path.join(__dirname, "..", imageRelativePath); // Gabungkan dengan path server
 
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-      console.log(`🗑️ Gambar barang dihapus: ${imagePath}`);
+      // Hapus gambar
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`🗑️ Gambar dihapus: ${imagePath}`);
+      } else {
+        console.log(`⚠️ File gambar tidak ditemukan: ${imagePath}`);
+      }
+
+      // Cek dan hapus folder qr_codes jika kosong
+      const folderPath = path.dirname(imagePath); // Ambil path folder
+
+      try {
+        const files = fs.readdirSync(folderPath); // Cek isi folder
+        if (files.length === 0) {
+          fs.rmdirSync(folderPath); // Hapus folder kalau kosong
+          console.log(`🗑️ Folder QR Codes dihapus: ${folderPath}`);
+        } else {
+          console.log(`📂 Folder tidak kosong, tidak dihapus: ${folderPath}`);
+        }
+      } catch (folderError) {
+        console.log(`⚠️ Gagal hapus folder: ${folderPath}`, folderError.message);
+      }
     }
 
     res.status(200).json({ message: "Barang berhasil dihapus" });
@@ -218,7 +239,7 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
     if (connection) await connection.end();
   }
 });
-
+//edit
 router.put("/:id", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
