@@ -220,7 +220,7 @@ router.delete("/:id", verifyFirebaseToken, async (req, res) => {
       fs.unlinkSync(qrCodePath);
       console.log(`🗑️ QR Code dihapus: ${qrCodePath}`);
     } else {
-      console.log(`⚠️ QR Code tidak ditemukan: ${qrCodePath}`);
+      console.log(`⚠️⚠️⚠️ QR Code tidak ditemukan: ${qrCodePath}`);
     }
 
     // 📂 Hapus folder jika kosong
