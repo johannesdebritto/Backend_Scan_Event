@@ -87,6 +87,7 @@ const upload = multer({
 ]);
 
 // Upload gambar barang dan QR Code dengan Firebase UID
+// Upload gambar barang dan QR Code dengan Firebase UID
 router.post("/", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -132,33 +133,53 @@ router.post("/", verifyFirebaseToken, (req, res) => {
         quantity,
         code,
         brand,
-        imageUrl, // Sertakan image URL dalam QR code
+        imageUrl,
       });
 
-      // Atur ukuran QR dan padding
-      const qrSize = 700; // Mengurangi ukuran QR Code agar bisa diberi ruang
-      const padding = 100; // Padding yang cukup
-      const totalSize = qrSize + padding * 2; // Total ukuran canvas
+      // Log isi QR Code
+      console.log("📦 Data yang ada di dalam QR Code:");
+      console.log(`📝 Name      : ${name}`);
+      console.log(`🔢 Quantity  : ${quantity}`);
+      console.log(`🏷️ Code      : ${code}`);
+      console.log(`🏭 Brand     : ${brand}`);
+      console.log(`🖼️ Image URL : ${imageUrl}`);
 
-      const canvas = createCanvas(totalSize, totalSize);
+      // Atur ukuran QR dan padding
+      const qrSize = 700;
+      const padding = 100;
+      const textHeight = 100;
+      const totalWidth = qrSize + padding * 2;
+      const totalHeight = qrSize + padding * 2 + textHeight;
+
+      const canvas = createCanvas(totalWidth, totalHeight);
       const ctx = canvas.getContext("2d");
 
-      // Latar belakang putih untuk QR Code
+      // Latar belakang putih
       ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(0, 0, totalSize, totalSize);
+      ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-      // Generate QR Code dengan margin di sekitar
-      await QRCode.toCanvas(canvas, qrContent, {
+      // Tambahkan nama barang di atas QR code
+      ctx.fillStyle = "#000000";
+      ctx.font = "bold 40px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText(name, totalWidth / 2, padding);
+
+      // Buat canvas QR code terpisah
+      const qrCanvas = createCanvas(qrSize, qrSize);
+      await QRCode.toCanvas(qrCanvas, qrContent, {
         width: qrSize,
-        margin: 4, // Margin yang sedikit lebih besar untuk QR Code
-        errorCorrectionLevel: "H", // Level koreksi kesalahan tinggi
+        margin: 6,
+        errorCorrectionLevel: "H",
         color: {
-          dark: "#000000", // Warna QR code
-          light: "#FFFFFF", // Latar belakang QR Code
+          dark: "#000000",
+          light: "#FFFFFF",
         },
       });
 
-      // Menyimpan file QR Code
+      // Gambar QR code ke canvas utama (di bawah teks)
+      ctx.drawImage(qrCanvas, padding, padding + textHeight);
+
+      // Simpan file QR Code
       const qrFileName = `qr_code_image-${Date.now()}-${Math.floor(Math.random() * 100000)}.png`;
       const qrDir = path.join(__dirname, "../qr_codes", firebase_uid);
       if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
@@ -167,11 +188,10 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       const buffer = canvas.toBuffer("image/png");
       fs.writeFileSync(qrPath, buffer);
 
-      // URL untuk QR Code
       const qrCodeUrl = `${firebase_uid}/${qrFileName}`;
       console.log("🔳 QR Code saved:", qrCodeUrl);
 
-      // Update database dengan URL QR Code
+      // Update database dengan QR Code URL
       await connection.execute(`UPDATE items SET qr_code_url = ? WHERE id = ?`, [qrCodeUrl, itemId]);
 
       await connection.commit();
@@ -191,6 +211,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
     }
   });
 });
+
 //
 //ambil data barang
 router.get("/", verifyFirebaseToken, async (req, res) => {
