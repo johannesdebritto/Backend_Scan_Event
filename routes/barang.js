@@ -87,7 +87,6 @@ const upload = multer({
 ]);
 
 // Upload gambar barang dan QR Code dengan Firebase UID
-// Upload gambar barang dan QR Code dengan Firebase UID
 router.post("/", verifyFirebaseToken, (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -136,7 +135,6 @@ router.post("/", verifyFirebaseToken, (req, res) => {
         imageUrl,
       });
 
-      // Log isi QR Code
       console.log("📦 Data yang ada di dalam QR Code:");
       console.log(`📝 Name      : ${name}`);
       console.log(`🔢 Quantity  : ${quantity}`);
@@ -145,9 +143,9 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       console.log(`🖼️ Image URL : ${imageUrl}`);
 
       // Atur ukuran QR dan padding
-      const qrSize = 700;
-      const padding = 100;
-      const textHeight = 100;
+      const qrSize = 500; // Ukuran QR code dikurangi
+      const padding = 30; // Padding dikurangi
+      const textHeight = 50; // Tinggi area teks
       const totalWidth = qrSize + padding * 2;
       const totalHeight = qrSize + padding * 2 + textHeight;
 
@@ -158,17 +156,20 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, totalWidth, totalHeight);
 
-      // Tambahkan nama barang di atas QR code
-      ctx.fillStyle = "#000000";
-      ctx.font = "bold 40px Arial";
+      // Tambahkan nama barang di atas QR code dengan format yang diminta
+      ctx.fillStyle = "#000000"; // Warna teks hitam
+      ctx.font = "bold 28px Arial"; // Ukuran font yang lebih reasonable
       ctx.textAlign = "center";
-      ctx.fillText(name, totalWidth / 2, padding);
+
+      // Teks "Nama: [nama barang]" di atas QR code
+      const namaText = `Nama: ${name}`;
+      ctx.fillText(namaText, totalWidth / 2, padding + 30);
 
       // Buat canvas QR code terpisah
       const qrCanvas = createCanvas(qrSize, qrSize);
       await QRCode.toCanvas(qrCanvas, qrContent, {
         width: qrSize,
-        margin: 6,
+        margin: 5,
         errorCorrectionLevel: "H",
         color: {
           dark: "#000000",
@@ -180,7 +181,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       ctx.drawImage(qrCanvas, padding, padding + textHeight);
 
       // Simpan file QR Code
-      const qrFileName = `qr_code_image-${Date.now()}-${Math.floor(Math.random() * 100000)}.png`;
+      const qrFileName = `qr_code_${itemId}.png`;
       const qrDir = path.join(__dirname, "../qr_codes", firebase_uid);
       if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
       const qrPath = path.join(qrDir, qrFileName);
