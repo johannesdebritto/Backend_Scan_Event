@@ -113,6 +113,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       connection = await connectDB();
       await connection.beginTransaction();
 
+      // Proses upload gambar barang
       const imageFileName = req.files["image"][0].filename;
       const imageUrl = `${firebase_uid}/${imageFileName}`;
       console.log("🖼️ Image saved:", imageUrl);
@@ -125,33 +126,38 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       const itemId = insertResult.insertId;
 
+      // Membuat QR Code
       const qrContent = JSON.stringify({
         name,
         quantity,
         code,
         brand,
-        imageUrl,
+        imageUrl, // Sertakan image URL dalam QR code
       });
 
+      // Atur ukuran QR dan padding
       const qrSize = 800;
-      const padding = 100;
+      const padding = 50; // Sesuaikan padding sesuai kebutuhan
       const totalSize = qrSize + padding * 2;
       const canvas = createCanvas(totalSize, totalSize);
       const ctx = canvas.getContext("2d");
 
+      // Latar belakang putih
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, totalSize, totalSize);
 
+      // Generate QR Code ke canvas
       await QRCode.toCanvas(canvas, qrContent, {
         width: qrSize,
-        margin: 0,
-        errorCorrectionLevel: "H",
+        margin: 0, // Tidak ada margin di QR Code
+        errorCorrectionLevel: "H", // Level koreksi kesalahan tinggi
         color: {
-          dark: "#000000",
-          light: "#FFFFFF",
+          dark: "#000000", // Warna QR code
+          light: "#FFFFFF", // Latar belakang QR Code
         },
       });
 
+      // Menyimpan file QR Code
       const qrFileName = `qr_code_image-${Date.now()}-${Math.floor(Math.random() * 100000)}.png`;
       const qrDir = path.join(__dirname, "../qr_codes", firebase_uid);
       if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
@@ -160,9 +166,11 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       const buffer = canvas.toBuffer("image/png");
       fs.writeFileSync(qrPath, buffer);
 
+      // URL untuk QR Code
       const qrCodeUrl = `${firebase_uid}/${qrFileName}`;
       console.log("🔳 QR Code saved:", qrCodeUrl);
 
+      // Update database dengan URL QR Code
       await connection.execute(`UPDATE items SET qr_code_url = ? WHERE id = ?`, [qrCodeUrl, itemId]);
 
       await connection.commit();
@@ -182,7 +190,6 @@ router.post("/", verifyFirebaseToken, (req, res) => {
     }
   });
 });
-
 //
 //ambil data barang
 router.get("/", verifyFirebaseToken, async (req, res) => {
