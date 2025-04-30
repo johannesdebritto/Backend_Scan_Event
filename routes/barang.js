@@ -5,6 +5,8 @@ const fs = require("fs");
 const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
+const QRCode = require("qrcode");
+const { createCanvas } = require("canvas");
 
 // Pastikan folder 'images' dan 'qr_codes' ada
 const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
@@ -91,25 +93,17 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       return res.status(400).json({ error: err.message });
     }
 
-    // Ambil data dari body dan files
     const { name, quantity, code, brand } = req.body;
     const firebase_uid = req.user && req.user.firebase_uid;
 
-    console.log("🟢 Menerima permintaan POST /api/barang");
-    console.log("🔍 UID dari Firebase:", firebase_uid);
-
-    // Validasi UID
     if (!firebase_uid) {
-      console.error("🔴 UID tidak ditemukan dalam request!");
       return res.status(401).json({ error: "Unauthorized: UID tidak ditemukan" });
     }
 
-    // Validasi field lainnya
     if (!name || !quantity || !code || !brand) {
       return res.status(400).json({ error: "Semua field harus diisi" });
     }
 
-    // Validasi apakah gambar ada
     if (!req.files || !req.files["image"]) {
       return res.status(400).json({ error: "Gambar barang harus diunggah" });
     }
@@ -119,38 +113,73 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       connection = await connectDB();
       await connection.beginTransaction();
 
-      // Simpan path gambar barang sesuai dengan folder UID
-      const imageUrl = `${firebase_uid}/${req.files["image"][0].filename}`;
+      const imageFileName = req.files["image"][0].filename;
+      const imageUrl = `/images/${firebase_uid}/${imageFileName}`;
 
-      // Simpan path file QR Code (tanpa nambah qr_codes lagi)
-      let qrCodeUrl = null;
-      if (req.files["qr_code_image"]) {
-        qrCodeUrl = `${firebase_uid}/${req.files["qr_code_image"][0].filename}`;
-      }
-
-      console.log("🟢🟢🟢 Menjalankan query INSERT dengan UID:", firebase_uid);
-
-      // Query INSERT untuk menyimpan data barang
-      const [result] = await connection.execute(
-        `INSERT INTO items (
-            firebase_uid, name, quantity, code, brand, image_url, qr_code_url
-          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [firebase_uid, name, quantity, code, brand, imageUrl, qrCodeUrl]
+      const [insertResult] = await connection.execute(
+        `INSERT INTO items (firebase_uid, name, quantity, code, brand, image_url)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [firebase_uid, name, quantity, code, brand, imageUrl]
       );
 
-      await connection.commit();
-      console.log("🟢🟢🟢 Barang berhasil ditambahkan! ID:", result.insertId);
+      const itemId = insertResult.insertId;
 
-      res.status(201).json({ message: "Barang berhasil ditambahkan", itemId: result.insertId });
+      const qrContent = JSON.stringify({
+        name,
+        quantity,
+        code,
+        brand,
+        imageUrl,
+      });
+
+      const qrSize = 800;
+      const padding = 100;
+      const totalSize = qrSize + padding * 2;
+      const canvas = createCanvas(totalSize, totalSize);
+      const ctx = canvas.getContext("2d");
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, totalSize, totalSize);
+
+      await QRCode.toCanvas(canvas, qrContent, {
+        width: qrSize,
+        margin: 0,
+        errorCorrectionLevel: "H",
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      });
+
+      const qrFileName = `qr_code_image-${Date.now()}-${Math.floor(Math.random() * 100000)}.png`;
+      const qrDir = path.join(__dirname, "../qr_codes", firebase_uid);
+      if (!fs.existsSync(qrDir)) fs.mkdirSync(qrDir, { recursive: true });
+      const qrPath = path.join(qrDir, qrFileName);
+
+      const buffer = canvas.toBuffer("image/png");
+      fs.writeFileSync(qrPath, buffer);
+
+      const qrCodeUrl = `/qr_codes/${firebase_uid}/${qrFileName}`;
+
+      await connection.execute(`UPDATE items SET qr_code_url = ? WHERE id = ?`, [qrCodeUrl, itemId]);
+
+      await connection.commit();
+
+      res.status(201).json({
+        message: "Barang berhasil ditambahkan dan QR Code dibuat",
+        itemId,
+        qrCodeUrl,
+      });
     } catch (error) {
       if (connection) await connection.rollback();
-      console.error("🔴🔴🔴 Error saat menyimpan barang:", error);
+      console.error("❌ Error saat menyimpan barang:", error);
       res.status(500).json({ error: "Gagal menambahkan barang", details: error.message });
     } finally {
       if (connection) await connection.end();
     }
   });
 });
+
 //
 //ambil data barang
 router.get("/", verifyFirebaseToken, async (req, res) => {
