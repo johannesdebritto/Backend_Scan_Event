@@ -115,6 +115,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       const imageFileName = req.files["image"][0].filename;
       const imageUrl = `/images/${firebase_uid}/${imageFileName}`;
+      console.log(`🖼️ Image berhasil disimpan: ${imageUrl}`);
 
       const [insertResult] = await connection.execute(
         `INSERT INTO items (firebase_uid, name, quantity, code, brand, image_url)
@@ -123,6 +124,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       );
 
       const itemId = insertResult.insertId;
+      console.log(`📦 Barang berhasil disimpan ke DB dengan ID: ${itemId}`);
 
       const qrContent = JSON.stringify({
         name,
@@ -131,6 +133,8 @@ router.post("/", verifyFirebaseToken, (req, res) => {
         brand,
         imageUrl,
       });
+
+      console.log(`🔠 Konten QR Code:\n${qrContent}`);
 
       const qrSize = 800;
       const padding = 100;
@@ -160,9 +164,9 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       fs.writeFileSync(qrPath, buffer);
 
       const qrCodeUrl = `/qr_codes/${firebase_uid}/${qrFileName}`;
+      console.log(`✅ QR Code berhasil dibuat dan disimpan: ${qrCodeUrl}`);
 
       await connection.execute(`UPDATE items SET qr_code_url = ? WHERE id = ?`, [qrCodeUrl, itemId]);
-
       await connection.commit();
 
       res.status(201).json({
