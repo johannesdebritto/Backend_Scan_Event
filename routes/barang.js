@@ -136,20 +136,21 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       });
 
       // Atur ukuran QR dan padding
-      const qrSize = 800;
-      const padding = 50; // Sesuaikan padding sesuai kebutuhan
-      const totalSize = qrSize + padding * 2;
+      const qrSize = 700; // Mengurangi ukuran QR Code agar bisa diberi ruang
+      const padding = 100; // Padding yang cukup
+      const totalSize = qrSize + padding * 2; // Total ukuran canvas
+
       const canvas = createCanvas(totalSize, totalSize);
       const ctx = canvas.getContext("2d");
 
-      // Latar belakang putih
+      // Latar belakang putih untuk QR Code
       ctx.fillStyle = "#FFFFFF";
       ctx.fillRect(0, 0, totalSize, totalSize);
 
-      // Generate QR Code ke canvas
+      // Generate QR Code dengan margin di sekitar
       await QRCode.toCanvas(canvas, qrContent, {
         width: qrSize,
-        margin: 0, // Tidak ada margin di QR Code
+        margin: 4, // Margin yang sedikit lebih besar untuk QR Code
         errorCorrectionLevel: "H", // Level koreksi kesalahan tinggi
         color: {
           dark: "#000000", // Warna QR code
