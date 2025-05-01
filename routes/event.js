@@ -473,12 +473,22 @@ router.get("/detail/:id_event", verifyFirebaseToken, async (req, res) => {
   try {
     connection = await connectDB();
 
-    // Ambil detail event berdasarkan id_event dan Firebase UID
+    // Ambil detail event termasuk tanggal_selesai dan waktu_selesai
     const [event] = await connection.execute(
-      `SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.id_status, s.nama_status AS status, e.waktu_dibuat  
-             FROM events e
-             JOIN status s ON e.id_status = s.id_status 
-             WHERE e.id_event = ? AND e.firebase_uid = ?`,
+      `SELECT 
+         e.id_event,
+         e.nama_event,
+         e.tanggal,
+         e.kota,
+         e.kabupaten,
+         e.id_status,
+         s.nama_status AS status,
+         e.waktu_dibuat,
+         e.tanggal_selesai,
+         e.waktu_selesai
+       FROM events e
+       JOIN status s ON e.id_status = s.id_status 
+       WHERE e.id_event = ? AND e.firebase_uid = ?`,
       [id_event, firebase_uid]
     );
 
