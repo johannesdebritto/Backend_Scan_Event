@@ -419,8 +419,7 @@ router.get("/event-statuscheck/:id_event/check-status", verifyFirebaseToken, asy
     if (connection) await connection.end();
   }
 });
-
-// Ambil daftar event berdasarkan Firebase UID
+//get event card
 router.get("/tampil", verifyFirebaseToken, async (req, res) => {
   const firebase_uid = req.user && req.user.firebase_uid;
 
@@ -436,9 +435,9 @@ router.get("/tampil", verifyFirebaseToken, async (req, res) => {
   try {
     connection = await connectDB();
 
-    // Ambil daftar event berdasarkan Firebase UID
+    // Ambil daftar event dengan kolom waktu_selesai dan tanggal_selesai
     const [events] = await connection.execute(
-      "SELECT e.id_event, e.nama_event, e.tanggal, e.kota, e.kabupaten, e.id_status, s.nama_status AS status, e.waktu_dibuat " +
+      "SELECT e.id_event, e.nama_event, e.tanggal, e.tanggal_selesai, e.waktu_selesai, e.kota, e.kabupaten, e.id_status, s.nama_status AS status, e.waktu_dibuat " +
         "FROM events e " +
         "JOIN status s ON e.id_status = s.id_status " +
         "WHERE e.firebase_uid = ? " +
