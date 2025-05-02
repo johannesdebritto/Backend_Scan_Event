@@ -14,7 +14,7 @@ function convertDateFormat(dateStr) {
 // Fungsi untuk mendapatkan tanggal sekarang dalam format YYYY-MM-DD (WIB)
 function getCurrentDateWIB() {
   const now = new Date();
-  now.setDate(now.getDate() + 1); // Koreksi tanggal +1 agar tidak telat
+  now.setDate(now.getDate()); // Koreksi tanggal +1 agar tidak telat
   now.setHours(now.getHours() + 7); // Ubah ke WIB
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, "0");
