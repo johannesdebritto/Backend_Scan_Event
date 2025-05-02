@@ -619,10 +619,18 @@ router.put("/event-selesai", verifyFirebaseToken, async (req, res) => {
       return res.status(404).json({ success: false, message: "Event tidak ditemukan atau tidak valid" });
     }
 
-    // Update status jadi selesai (misal 1 = selesai)
-    await connection.execute("UPDATE events SET id_status = ? WHERE id_event = ?", [1, id_event]);
+    const tanggalSelesai = getCurrentDateWIB(); // Mendapatkan tanggal selesai (WIB)
+    const waktuSelesai = getCurrentTimeWIB(); // Mendapatkan waktu selesai (WIB)
 
-    console.log("✅ Event berhasil ditandai sebagai selesai!");
+    // Update status, tanggal selesai, dan waktu selesai
+    await connection.execute(
+      `UPDATE events
+       SET id_status = ?, tanggal_selesai = ?, waktu_selesai = ?
+       WHERE id_event = ?`,
+      [1, tanggalSelesai, waktuSelesai, id_event]
+    );
+
+    console.log("✅ Event berhasil ditandai sebagai selesai dengan waktu & tanggal!");
     return res.status(200).json({ success: true, message: "Event diselesaikan!" });
   } catch (err) {
     console.error("🚨 Gagal menyelesaikan event:", err);
