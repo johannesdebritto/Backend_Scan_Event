@@ -374,13 +374,19 @@ router.put("/scan-complete", verifyFirebaseToken, async (req, res) => {
       return res.status(404).json({ success: false, message: "QR Code tidak ditemukan" });
     }
 
-    // Update status QR Code menjadi 'selesai'
+    // Ambil tanggal dan waktu WIB
+    const tanggal_selesai = getCurrentDateWIB();
+    const waktu_selesai = getCurrentTimeWIB();
+
+    // Update status QR Code, waktu_selesai dan tanggal_selesai
     await connection.execute(
-      "UPDATE qr_codes SET id_status = ? WHERE id_event = ? AND qr_code = ?",
-      [1, id_event, qr_code] // 1 = Selesai
+      `UPDATE qr_codes 
+       SET id_status = ?, waktu_selesai = ?, tanggal_selesai = ?
+       WHERE id_event = ? AND qr_code = ?`,
+      [1, waktu_selesai, tanggal_selesai, id_event, qr_code] // 1 = Selesai
     );
 
-    console.log("✅ QR Code berhasil diperbarui menjadi 'selesai'!");
+    console.log("✅ QR Code berhasil diperbarui menjadi 'selesai' dengan waktu dan tanggal WIB!");
     return res.status(200).json({ success: true, message: "QR Code berhasil diperbarui" });
   } catch (error) {
     console.error("🚨 Error saat memperbarui QR code:", error);
