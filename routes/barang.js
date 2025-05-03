@@ -163,13 +163,13 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       // Tambahkan nama barang di atas QR code dengan format yang diminta
       // Tambahkan teks di atas QR code
-      ctx.font = "28px InterCustom";
+      ctx.font = "22px InterCustom";
       ctx.fillStyle = "#000000";
       ctx.textAlign = "center";
 
-      const namaText = `Nama: ${name}`;
+      const namaText = `Nama Barang: ${name}`;
       const textPosX = totalWidth / 2;
-      const textPosY = 40; // Posisi Y yang aman biar tidak tertutup QR
+      const textPosY = 20; // Posisi Y yang aman biar tidak tertutup QR
 
       console.log("📝 Teks yang ditampilkan di atas QR:", namaText);
       console.log("📍 Posisi teks - X:", textPosX, "| Y:", textPosY);
@@ -180,7 +180,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       const qrCanvas = createCanvas(qrSize, qrSize);
       await QRCode.toCanvas(qrCanvas, qrContent, {
         width: qrSize,
-        margin: 5,
+        margin: 4,
         errorCorrectionLevel: "H",
         color: {
           dark: "#000000",
