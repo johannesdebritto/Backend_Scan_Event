@@ -6,7 +6,12 @@ const connectDB = require("../db");
 const verifyFirebaseToken = require("../middleware/verifyFirebaseToken"); // Import koneksi database
 const router = express.Router();
 const QRCode = require("qrcode");
-const { createCanvas } = require("canvas");
+const { createCanvas, registerFont } = require("canvas");
+
+// Daftarkan font dengan nama family bebas (misal: "InterCustom")
+registerFont(path.join(__dirname, "../fonts/Inter_18pt-Bold.ttf"), {
+  family: "InterCustom",
+});
 
 // Pastikan folder 'images' dan 'qr_codes' ada
 const imageFolder = path.join(__dirname, "../images"); // Folder untuk gambar barang
@@ -158,7 +163,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       // Tambahkan nama barang di atas QR code dengan format yang diminta
       // Tambahkan teks di atas QR code
-      ctx.font = "bold 28px sans-serif"; // Gunakan font umum yang pasti ada
+      ctx.font = "28px InterCustom";
       ctx.fillStyle = "#000000";
       ctx.textAlign = "center";
 
