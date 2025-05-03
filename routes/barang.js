@@ -149,7 +149,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       // Atur ukuran QR dan padding
       const qrSize = 500; // Ukuran QR code dikurangi
-      const padding = 30; // Padding dikurangi
+      const padding = 20; // Padding dikurangi
       const textHeight = 28; // Tinggi area teks
       const totalWidth = qrSize + padding * 2;
       const totalHeight = qrSize + padding * 2 + textHeight;
@@ -169,7 +169,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       const namaText = `Nama Barang: ${name}`;
       const textPosX = totalWidth / 2;
-      const textPosY = 40; // Posisi Y yang aman biar tidak tertutup QR
+      const textPosY = 50; // Posisi Y yang aman biar tidak tertutup QR
 
       console.log("📝 Teks yang ditampilkan di atas QR:", namaText);
       console.log("📍 Posisi teks - X:", textPosX, "| Y:", textPosY);
