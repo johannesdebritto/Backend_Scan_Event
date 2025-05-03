@@ -149,7 +149,7 @@ router.post("/", verifyFirebaseToken, (req, res) => {
 
       // Atur ukuran QR dan padding
       const qrSize = 500; // Ukuran QR code dikurangi
-      const padding = 20; // Padding dikurangi
+      const padding = 30; // Padding dikurangi
       const textHeight = 28; // Tinggi area teks
       const totalWidth = qrSize + padding * 2;
       const totalHeight = qrSize + padding * 2 + textHeight;
