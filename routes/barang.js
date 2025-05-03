@@ -157,13 +157,19 @@ router.post("/", verifyFirebaseToken, (req, res) => {
       ctx.fillRect(0, 0, totalWidth, totalHeight);
 
       // Tambahkan nama barang di atas QR code dengan format yang diminta
-      ctx.fillStyle = "#000000"; // Warna teks hitam
-      ctx.font = "bold 28px Arial"; // Ukuran font yang lebih reasonable
+      // Tambahkan teks di atas QR code
+      ctx.font = "bold 28px sans-serif"; // Gunakan font umum yang pasti ada
+      ctx.fillStyle = "#000000";
       ctx.textAlign = "center";
 
-      // Teks "Nama: [nama barang]" di atas QR code
       const namaText = `Nama: ${name}`;
-      ctx.fillText(namaText, totalWidth / 2, padding + 30);
+      const textPosX = totalWidth / 2;
+      const textPosY = 40; // Posisi Y yang aman biar tidak tertutup QR
+
+      console.log("📝 Teks yang ditampilkan di atas QR:", namaText);
+      console.log("📍 Posisi teks - X:", textPosX, "| Y:", textPosY);
+
+      ctx.fillText(namaText, textPosX, textPosY);
 
       // Buat canvas QR code terpisah
       const qrCanvas = createCanvas(qrSize, qrSize);
